@@ -276,7 +276,7 @@ export const ChaosExperimentsView: React.FC = () => {
       <SandboxLayout.Content>
         {/* Page header */}
         <Text as="h1" variant="heading-section">
-          Chaos experiments
+          Chaos Experiments
         </Text>
 
         <Spacer size={5} />
