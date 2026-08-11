@@ -1,15 +1,6 @@
 import { FC, PropsWithChildren } from 'react'
 
-import {
-  Breadcrumb,
-  HarnessLogo,
-  IconV2,
-  SearchProvider,
-  Sidebar,
-  SidebarSearch,
-  Text,
-  useSidebar
-} from '@harnessio/ui/components'
+import { Breadcrumb, HarnessLogo, IconV2, Sidebar, Text, useSidebar } from '@harnessio/ui/components'
 
 import { AppViewWrapper, AppViewWrapperProps } from './app-view-wrapper'
 
@@ -25,29 +16,24 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
   return (
   <Sidebar.Root>
     <Sidebar.Header>
-      <SearchProvider>
-        <div className={`gap-cn-md flex flex-col${collapsed ? ' items-center' : ''}`}>
-          <div className={`flex w-full items-center ${collapsed ? 'justify-center' : 'gap-cn-sm'}`}>
-            <div className={collapsed ? 'flex items-center' : 'pl-cn-xs flex items-center'}>
-              <HarnessLogo size={26} />
-            </div>
-            {!collapsed && (
-              <>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <Text variant="body-single-line-strong" truncate>
-                    Project Name
-                  </Text>
-                  <Text variant="caption-single-line-normal" color="foreground-3" truncate>
-                    Project
-                  </Text>
-                </div>
-                <IconV2 name="nav-arrow-right" size="xs" className="text-cn-3" />
-              </>
-            )}
-          </div>
-          <SidebarSearch />
+      <div className={`flex w-full items-center ${collapsed ? 'justify-center' : 'gap-cn-sm'}`}>
+        <div className={collapsed ? 'flex items-center' : 'pl-cn-xs flex items-center'}>
+          <HarnessLogo size={26} />
         </div>
-      </SearchProvider>
+        {!collapsed && (
+          <>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <Text variant="body-single-line-strong" truncate>
+                Project Name
+              </Text>
+              <Text variant="caption-single-line-normal" color="foreground-3" truncate>
+                Project
+              </Text>
+            </div>
+            <IconV2 name="nav-arrow-right" size="xs" className="text-cn-3" />
+          </>
+        )}
+      </div>
     </Sidebar.Header>
     <Sidebar.Content>
       <Sidebar.Group>
