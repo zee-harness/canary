@@ -28,18 +28,23 @@ export const ChatMarker = ({ open, onToggle }: { open: boolean; onToggle: () => 
 )
 
 /**
- * The collapsed AI chat: a thin card peeking out of the gutter just left of the main
- * body (the "stacked cards" look) with the grip centered on it. Clicking expands the chat.
+ * The collapsed AI chat: a thin, slightly-shorter card tucked BEHIND the main body so its
+ * left edge peeks out from beneath the main border (stacked-cards look). Must be rendered
+ * inside the `relative` body column; the main panel sits above it (z-10) and hides its right
+ * side. Clicking expands the chat.
  */
 export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
   <button
     type="button"
     onClick={onExpand}
     aria-label="Expand AI chat"
-    className="group my-cn-2xs ml-cn-2xs relative shrink-0 self-stretch"
+    className="group absolute"
     style={{
-      width: 14,
-      marginRight: -6,
+      left: 6,
+      top: 16,
+      bottom: 16,
+      width: 34,
+      zIndex: 0,
       borderRadius: 12,
       border: '1px solid var(--cn-border-2)',
       backgroundColor: 'var(--cn-bg-1)'
@@ -47,7 +52,7 @@ export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
   >
     <span
       className="absolute flex items-center"
-      style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+      style={{ top: '50%', left: 10, transform: 'translate(-50%, -50%)' }}
     >
       <Grip />
     </span>

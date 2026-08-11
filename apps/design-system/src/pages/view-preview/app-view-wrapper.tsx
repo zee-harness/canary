@@ -124,18 +124,21 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
             >
               {insetBody ? (
                 <>
-                  {chatOpen ? (
-                    <ChatPanel onClose={() => setChatOpen(false)} />
-                  ) : (
-                    <CollapsedChatPeek onExpand={() => setChatOpen(true)} />
-                  )}
+                  {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
                   <div className="relative flex min-w-0 flex-1 flex-col">
-                    {chatOpen && <ChatMarker open={chatOpen} onToggle={() => setChatOpen(open => !open)} />}
+                    {chatOpen ? (
+                      <ChatMarker open={chatOpen} onToggle={() => setChatOpen(open => !open)} />
+                    ) : (
+                      <CollapsedChatPeek onExpand={() => setChatOpen(true)} />
+                    )}
                     <div
                       id="main-content-layout"
-                      className={`flex min-h-0 flex-1 flex-col overflow-hidden ${childrenWrapperClassName ?? ''}`}
+                      className={`relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden ${childrenWrapperClassName ?? ''}`}
                       style={{
-                        margin: 6,
+                        marginTop: 6,
+                        marginBottom: 6,
+                        marginRight: 6,
+                        marginLeft: chatOpen ? 6 : 26,
                         borderRadius: 12,
                         border: '1px solid var(--cn-border-2)',
                         backgroundColor: 'var(--cn-bg-1)'
