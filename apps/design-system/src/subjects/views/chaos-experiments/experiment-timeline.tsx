@@ -140,7 +140,7 @@ const ProbeIcon = () => <IconV2 name="rt-probe" size="md" className="text-cn-1 s
  */
 const RunningBadge = () => (
   <div className="cn-badge cn-badge-secondary cn-badge-warning cn-badge-sm inline-flex w-fit items-center transition-colors">
-    <IconV2 name="refresh-double" className="animate-spin" />
+    <IconV2 name="loader" className="animate-spin" />
     Running
   </div>
 )
