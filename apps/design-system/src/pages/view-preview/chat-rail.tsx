@@ -6,24 +6,25 @@ const suggestions = [
   { icon: 'warning-triangle', label: 'Analyze Pipeline Errors' }
 ] as const
 
-/** Two short vertical bars side-by-side — the grip used on the chat/body seam. */
-const Grip = () => (
-  <span className="flex items-center" style={{ gap: 3 }}>
-    <span className="bg-cn-3 transition-colors group-hover:bg-cn-1" style={{ width: 2, height: 22, borderRadius: 9999 }} />
-    <span className="bg-cn-3 transition-colors group-hover:bg-cn-1" style={{ width: 2, height: 22, borderRadius: 9999 }} />
-  </span>
+const Bar = () => (
+  <span style={{ width: 2, height: 20, borderRadius: 9999, backgroundColor: 'var(--cn-text-2)' }} />
 )
 
-/** Grip on the left border of the main body, used to collapse the chat when it's open. */
-export const ChatMarker = ({ open, onToggle }: { open: boolean; onToggle: () => void }) => (
+/**
+ * Grip straddling the seam between the chat (or collapsed peek) and the main body — two
+ * thin vertical bars, one either side of the seam. `seamX` is the seam's x offset within
+ * the (relative) body column. Sits above the main panel so both bars stay visible.
+ */
+export const SeamGrip = ({ open, onToggle, seamX }: { open: boolean; onToggle: () => void; seamX: number }) => (
   <button
     type="button"
     onClick={onToggle}
     aria-label={open ? 'Collapse AI chat' : 'Expand AI chat'}
     className="group absolute z-20 flex items-center justify-center"
-    style={{ top: '50%', left: 6, transform: 'translate(-50%, -50%)', width: 18, height: 44 }}
+    style={{ top: '50%', left: seamX, transform: 'translate(-50%, -50%)', width: 22, height: 44, gap: 8 }}
   >
-    <Grip />
+    <Bar />
+    <Bar />
   </button>
 )
 
@@ -38,7 +39,7 @@ export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
     type="button"
     onClick={onExpand}
     aria-label="Expand AI chat"
-    className="group absolute"
+    className="absolute"
     style={{
       left: 6,
       top: 16,
@@ -49,14 +50,7 @@ export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
       border: '1px solid var(--cn-border-2)',
       backgroundColor: 'var(--cn-bg-1)'
     }}
-  >
-    <span
-      className="absolute flex items-center"
-      style={{ top: '50%', left: 10, transform: 'translate(-50%, -50%)' }}
-    >
-      <Grip />
-    </span>
-  </button>
+  />
 )
 
 /** The expandable "New Chat" AI panel that sits between the sidebar and the main body. */
