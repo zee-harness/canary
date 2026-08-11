@@ -76,15 +76,19 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
 
 export interface ResilienceTestsViewWrapperProps extends Omit<AppViewWrapperProps, 'breadcrumbs' | 'sidebar'> {
   activeNav: ResilienceNav
+  /** Optional leaf breadcrumb (e.g. an experiment name) shown after the module crumbs. */
+  leaf?: string
 }
 
 const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrapperProps>> = ({
   children,
   asChild,
   childrenWrapperClassName,
-  activeNav
+  activeNav,
+  leaf
 }) => {
   const isChaos = activeNav === 'chaos-experiments'
+  const hasLeaf = Boolean(leaf)
 
   return (
     <AppViewWrapper
@@ -114,7 +118,19 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
                 <>
                   <Breadcrumb.Separator />
                   <Breadcrumb.Item>
-                    <Breadcrumb.Page>Chaos Experiments</Breadcrumb.Page>
+                    {hasLeaf ? (
+                      <Breadcrumb.Link href="#">Chaos Experiments</Breadcrumb.Link>
+                    ) : (
+                      <Breadcrumb.Page>Chaos Experiments</Breadcrumb.Page>
+                    )}
+                  </Breadcrumb.Item>
+                </>
+              )}
+              {hasLeaf && (
+                <>
+                  <Breadcrumb.Separator />
+                  <Breadcrumb.Item>
+                    <Breadcrumb.Page>{leaf}</Breadcrumb.Page>
                   </Breadcrumb.Item>
                 </>
               )}

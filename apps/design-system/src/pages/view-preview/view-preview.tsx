@@ -12,6 +12,7 @@ import DataTableGroupedHeadersDemo from '@subjects/views/data-table-grouped-head
 import DataTablePinnedRowsDemo from '@subjects/views/data-table-pinned-rows-demo'
 import DataTableStickyHeaderDemo from '@subjects/views/data-table-sticky-header-demo'
 import ChaosExperimentsView from '@subjects/views/chaos-experiments/chaos-experiments'
+import { ExperimentExecutionView } from '@subjects/views/chaos-experiments/experiment-execution'
 import { ResilienceOverview } from '@subjects/views/chaos-experiments/resilience-overview'
 import DraggableCardsDemo from '@subjects/views/draggable-cards-demo'
 import ExecutionListWrapper from '@subjects/views/execution-list/execution-list'
@@ -361,6 +362,14 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
         element: (
           <ResilienceTestsViewWrapper activeNav="chaos-experiments">
             <ChaosExperimentsView />
+          </ResilienceTestsViewWrapper>
+        )
+      },
+      'chaos-experiments/executions': {
+        label: 'Experiment Execution',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="chaos-experiments" leaf="nginx-pod-delete-test">
+            <ExperimentExecutionView />
           </ResilienceTestsViewWrapper>
         )
       }

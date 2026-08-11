@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import type { ColumnDef, RowSelectionState, SortingState } from '@tanstack/react-table'
 
@@ -154,6 +155,7 @@ const statusConfig: Record<
 }
 
 export const ChaosExperimentsView: React.FC = () => {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
@@ -238,11 +240,16 @@ export const ChaosExperimentsView: React.FC = () => {
           const primaryAction: {
             icon: 'stop-solid' | 'clock-solid' | 'play-solid'
             label: string
+            onClick?: () => void
           } = isRunning
             ? { icon: 'stop-solid', label: 'Stop run' }
             : isScheduled
               ? { icon: 'clock-solid', label: 'View schedule' }
-              : { icon: 'play-solid', label: 'Run experiment' }
+              : {
+                  icon: 'play-solid',
+                  label: 'Run experiment',
+                  onClick: () => navigate('/view-preview/chaos-experiments/executions')
+                }
 
           return (
             <div className="gap-cn-2xs flex items-center justify-end">
@@ -250,8 +257,10 @@ export const ChaosExperimentsView: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 iconOnly
+                aria-label={primaryAction.label}
                 tooltipProps={{ content: primaryAction.label }}
                 theme={isRunning ? 'danger' : 'default'}
+                onClick={primaryAction.onClick}
               >
                 <IconV2 name={primaryAction.icon} />
               </Button>
@@ -268,7 +277,7 @@ export const ChaosExperimentsView: React.FC = () => {
         }
       }
     ],
-    []
+    [navigate]
   )
 
   return (
