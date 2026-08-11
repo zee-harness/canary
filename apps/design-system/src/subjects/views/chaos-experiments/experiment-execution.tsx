@@ -89,9 +89,10 @@ export const ExperimentExecutionView = () => {
               timelineStatus === 'completed' ? RUN_DURATION_SECONDS : Math.min(elapsedSeconds, RUN_DURATION_SECONDS)
             )}
           </InfoItem>
-          <InfoItem label="Created">3m ago</InfoItem>
           <InfoItem label="Infrastructure">k8s-agent-01</InfoItem>
-          <InfoItem label="Resilience Score">Calculating...</InfoItem>
+          <InfoItem label="Resilience Score">
+            {timelineStatus === 'completed' ? '75%' : 'Calculating...'}
+          </InfoItem>
         </div>
 
         {/* tabs */}
