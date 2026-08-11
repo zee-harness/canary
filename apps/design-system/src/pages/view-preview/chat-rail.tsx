@@ -56,7 +56,7 @@ export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
       zIndex: 0,
       borderRadius: 12,
       border: '1px solid var(--cn-border-2)',
-      backgroundColor: 'var(--cn-bg-1)'
+      backgroundColor: 'var(--cn-comp-ai-chat-bg)'
     }}
   />
 )
@@ -64,7 +64,7 @@ export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
 /** The expandable "New Chat" AI panel that sits between the sidebar and the main body. */
 export const ChatPanel = ({ onClose }: { onClose: () => void }) => (
   <div
-    className="my-cn-2xs ml-cn-2xs border-cn-2 bg-cn-1 flex shrink-0 flex-col overflow-hidden rounded-cn-3 border"
+    className="my-cn-2xs ml-cn-2xs border-cn-2 cn-chat-surface flex shrink-0 flex-col overflow-hidden rounded-cn-3 border"
     style={{ width: 360 }}
   >
     {/* Header */}
