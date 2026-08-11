@@ -171,7 +171,11 @@ export const ChaosExperimentsView: React.FC = () => {
         enableSorting: false,
         size: 320,
         minSize: 280,
-        cell: ({ row }) => <span className="text-cn-1 truncate font-medium">{row.original.name}</span>
+        cell: ({ row }) => (
+          <Text variant="body-single-line-strong" color="foreground-1" truncate>
+            {row.original.name}
+          </Text>
+        )
       },
       {
         accessorKey: 'infrastructure',
@@ -187,7 +191,9 @@ export const ChaosExperimentsView: React.FC = () => {
               ) : (
                 <IconV2 name="infrastructure" size="sm" color="neutral" />
               )}
-              <span className="text-cn-2 truncate">{row.original.infrastructure}</span>
+              <Text variant="body-single-line-normal" color="foreground-2" truncate>
+                {row.original.infrastructure}
+              </Text>
             </div>
           )
         }
@@ -197,14 +203,22 @@ export const ChaosExperimentsView: React.FC = () => {
         header: 'Schedule',
         enableSorting: false,
         size: 130,
-        cell: ({ row }) => <span className="text-cn-2 whitespace-nowrap">{row.original.schedule}</span>
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2" className="whitespace-nowrap">
+            {row.original.schedule}
+          </Text>
+        )
       },
       {
         accessorKey: 'lastExecution',
         header: 'Last Execution',
         enableSorting: true,
         size: 150,
-        cell: ({ row }) => <span className="text-cn-2 whitespace-nowrap">{row.original.lastExecution}</span>
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2" className="whitespace-nowrap">
+            {row.original.lastExecution}
+          </Text>
+        )
       },
       {
         accessorKey: 'status',
@@ -225,7 +239,11 @@ export const ChaosExperimentsView: React.FC = () => {
         header: 'Last Modified',
         enableSorting: true,
         size: 150,
-        cell: ({ row }) => <span className="text-cn-2 whitespace-nowrap">{row.original.lastModified}</span>
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2" className="whitespace-nowrap">
+            {row.original.lastModified}
+          </Text>
+        )
       },
       {
         id: 'actions',
