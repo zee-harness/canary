@@ -127,10 +127,21 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
                   {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
                   <div className="relative flex min-w-0 flex-1 flex-col">
                     <ChatMarker open={chatOpen} onToggle={() => setChatOpen(open => !open)} />
-                    <MainContentLayout className={childrenWrapperClassName} enableInset>
+                    <div
+                      id="main-content-layout"
+                      className={`flex min-h-0 flex-1 flex-col overflow-hidden ${childrenWrapperClassName ?? ''}`}
+                      style={{
+                        margin: 6,
+                        borderRadius: 12,
+                        border: '1px solid var(--cn-border-2)',
+                        backgroundColor: 'var(--cn-bg-1)'
+                      }}
+                    >
                       {breadcrumbs}
-                      <Outlet />
-                    </MainContentLayout>
+                      <div className="min-h-0 flex-1 overflow-auto">
+                        <Outlet />
+                      </div>
+                    </div>
                   </div>
                 </>
               ) : (
