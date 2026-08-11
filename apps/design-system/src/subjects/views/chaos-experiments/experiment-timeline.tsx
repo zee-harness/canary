@@ -8,7 +8,7 @@ type Phase = 'running' | 'settled' | 'done'
 const START_WIDTH = 10 // px — the node starts as a sliver on the timeline
 const EXPAND_SPEED = 87.5 // px per second (constant, so node length encodes duration)
 const NODE_ANCHOR = 44 // aligns a node's start with the "0s" starting-point line
-const LANE_HEIGHT = 104
+const LANE_HEIGHT = 140 // taller than a node so it sits with margin inside the lane borders
 
 interface AnimatedNodeProps {
   /** How long the node runs, in ms (also drives the ticking "Xs" counter). */
@@ -191,10 +191,7 @@ export const TimelineSwimlanes = ({ laneCount = 8 }: { laneCount?: number }) => 
         </div>
       </Lane>
 
-      {/* Lane 2 — spacer */}
-      <Lane />
-
-      {/* Lane 3 — probe */}
+      {/* Lane 2 — probe */}
       <Lane>
         <AnimatedNode
           key={`probe-${runId}`}
@@ -209,7 +206,7 @@ export const TimelineSwimlanes = ({ laneCount = 8 }: { laneCount?: number }) => 
       </Lane>
 
       {/* remaining empty lanes keep the "flexible & scrollable" grid look */}
-      {Array.from({ length: Math.max(laneCount - 3, 0) }).map((_, i) => (
+      {Array.from({ length: Math.max(laneCount - 2, 0) }).map((_, i) => (
         <div key={`empty-${i}`} className="border-cn-2 border-b" style={{ minHeight: LANE_HEIGHT }} />
       ))}
     </>
