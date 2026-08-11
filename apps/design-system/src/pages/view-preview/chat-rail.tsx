@@ -21,10 +21,11 @@ export const SeamGrip = ({ open, onToggle, seamX }: { open: boolean; onToggle: (
     onClick={onToggle}
     aria-label={open ? 'Collapse AI chat' : 'Expand AI chat'}
     className="group absolute z-20 flex items-center justify-center"
-    // Match the sidebar rail's collapse marker, which sits at (50% - header height), so the
-    // two grip markers on the two borders line up vertically.
+    // Match the sidebar rail's collapse marker: it's top-anchored at (50% - header height)
+    // and flows downward, so its optical center is ~half a line-height below that anchor.
+    // Our bar is center-anchored, so add that offset to line the two grips up vertically.
     style={{
-      top: 'calc(50% - var(--cn-header-height))',
+      top: 'calc(50% - var(--cn-header-height) + 10px)',
       left: seamX,
       transform: 'translate(-50%, -50%)',
       width: 16,
