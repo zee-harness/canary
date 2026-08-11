@@ -15,7 +15,9 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
 
   return (
   <Sidebar.Root>
-    <Sidebar.Header>
+    {/* Zero the header's bottom padding so the logo sits tight to the pinned group,
+        matching the design (only the group's own top padding separates them). */}
+    <Sidebar.Header style={{ paddingBottom: 0 }}>
       <div className={`flex w-full items-center ${collapsed ? 'justify-center' : 'gap-cn-sm'}`}>
         <div className={collapsed ? 'flex items-center' : 'pl-cn-xs flex items-center'}>
           <HarnessLogo size={26} />
@@ -43,7 +45,7 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
 
       <Sidebar.Separator />
 
-      <Sidebar.Group>
+      <Sidebar.Group label="Recent">
         <Sidebar.Item icon="chaos-tests" title="Resilience Tests" defaultSubmenuOpen>
           <Sidebar.MenuSubItem to={OVERVIEW_ROUTE} end active={activeNav === 'overview'} title="Overview" />
           <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/insights`} title="Insights" />
