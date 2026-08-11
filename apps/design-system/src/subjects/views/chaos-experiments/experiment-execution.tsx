@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
-import { TimelineSwimlanes } from './experiment-timeline'
+import { RunningBadge, TimelineSwimlanes } from './experiment-timeline'
 
 // Timeline axis: relative offsets (top row) + absolute clock times (bottom row).
 const RELATIVE_TIMES = [
@@ -65,6 +65,7 @@ const TickColumn = ({ label, small }: { label: string; small?: boolean }) => (
 
 export const ExperimentExecutionView = () => {
   const [activeTab, setActiveTab] = useState('timeline')
+  const [timelineStatus, setTimelineStatus] = useState<'running' | 'completed'>('running')
 
   return (
     <div className="flex h-full flex-col">
@@ -98,9 +99,13 @@ export const ExperimentExecutionView = () => {
         {/* info row */}
         <div className="flex items-center" style={{ gap: 40 }}>
           <InfoItem label="Status">
-            <StatusBadge variant="secondary" theme="warning" icon="refresh-double" size="sm">
-              Running
-            </StatusBadge>
+            {timelineStatus === 'completed' ? (
+              <StatusBadge variant="secondary" theme="success" icon="check-circle" size="sm">
+                Completed
+              </StatusBadge>
+            ) : (
+              <RunningBadge />
+            )}
           </InfoItem>
           <InfoItem label="Duration">1m 25s</InfoItem>
           <InfoItem label="Created">3m ago</InfoItem>
@@ -151,7 +156,7 @@ export const ExperimentExecutionView = () => {
               className="absolute bottom-0 top-0"
               style={{ left: STARTING_POINT_X, borderLeft: '1px dashed var(--cn-border-3)' }}
             />
-            <TimelineSwimlanes />
+            <TimelineSwimlanes onStatusChange={setTimelineStatus} />
           </div>
         </div>
       </div>

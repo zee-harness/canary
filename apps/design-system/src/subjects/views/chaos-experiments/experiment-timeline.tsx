@@ -135,10 +135,10 @@ const FaultIcon = () => <IconV2 name="chaos-fault" size="md" className="text-cn-
 const ProbeIcon = () => <IconV2 name="rt-probe" size="md" className="text-cn-1 shrink-0" />
 
 /**
- * Mirrors StatusBadge's warning look but with a spinning icon (StatusBadge renders its icon
- * statically and offers no spin hook). Uses the same `cn-badge*` classes so it matches.
+ * Mirrors StatusBadge's warning look but with a spinning loader icon (StatusBadge renders
+ * its icon statically and offers no spin hook). Uses the same `cn-badge*` classes so it matches.
  */
-const RunningBadge = () => (
+export const RunningBadge = () => (
   <div className="cn-badge cn-badge-secondary cn-badge-warning cn-badge-sm inline-flex w-fit items-center transition-colors">
     <IconV2 name="loader" className="animate-spin" />
     Running
@@ -159,15 +159,27 @@ const Lane = ({ children }: { children?: ReactNode }) => (
  * first (nginx-pod-delete → node-cpu-hog); a probe runs on its own lane; once everything
  * settles the whole sequence resets and loops.
  */
-export const TimelineSwimlanes = ({ laneCount = 8 }: { laneCount?: number }) => {
+export const TimelineSwimlanes = ({
+  laneCount = 8,
+  onStatusChange
+}: {
+  laneCount?: number
+  /** Reports the overall timeline status as the run completes and loops. */
+  onStatusChange?: (status: 'running' | 'completed') => void
+}) => {
   const [runId, setRunId] = useState(0)
   const [showSecondFault, setShowSecondFault] = useState(false)
+  const onStatusChangeRef = useRef(onStatusChange)
+  onStatusChangeRef.current = onStatusChange
 
   const handleFirstFaultComplete = useCallback(() => setShowSecondFault(true), [])
   const handleProbeComplete = useCallback(() => {
+    // The probe is the longest node, so its completion means the whole run is done.
+    onStatusChangeRef.current?.('completed')
     setTimeout(() => {
       setShowSecondFault(false)
       setRunId(id => id + 1)
+      onStatusChangeRef.current?.('running')
     }, 3000)
   }, [])
 
