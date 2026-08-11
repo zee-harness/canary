@@ -8,7 +8,6 @@ import {
   Sidebar,
   SidebarSearch,
   Text,
-  Topbar,
   useSidebar
 } from '@harnessio/ui/components'
 
@@ -94,29 +93,34 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
       insetBody
       sidebar={<ResilienceTestsSidebar activeNav={activeNav} />}
       breadcrumbs={
-        <Topbar.Root className="bg-cn-1 sticky top-0 z-20">
-          <Topbar.Left>
-            <Breadcrumb.Root className="select-none">
-              <Breadcrumb.List>
-                <Breadcrumb.Item>
-                  {isChaos ? (
-                    <Breadcrumb.Link href="#">Resilience Testing</Breadcrumb.Link>
-                  ) : (
-                    <Breadcrumb.Page>Resilience Testing</Breadcrumb.Page>
-                  )}
-                </Breadcrumb.Item>
-                {isChaos && (
-                  <>
-                    <Breadcrumb.Separator />
-                    <Breadcrumb.Item>
-                      <Breadcrumb.Page>Chaos Experiments</Breadcrumb.Page>
-                    </Breadcrumb.Item>
-                  </>
+        <div
+          className="bg-cn-1 flex items-center"
+          style={{
+            height: 'var(--cn-breadcrumbs-height)',
+            paddingLeft: 'var(--cn-page-container-spacing-px)',
+            paddingRight: 'var(--cn-page-container-spacing-px)'
+          }}
+        >
+          <Breadcrumb.Root className="select-none">
+            <Breadcrumb.List>
+              <Breadcrumb.Item>
+                {isChaos ? (
+                  <Breadcrumb.Link href="#">Resilience Testing</Breadcrumb.Link>
+                ) : (
+                  <Breadcrumb.Page>Resilience Testing</Breadcrumb.Page>
                 )}
-              </Breadcrumb.List>
-            </Breadcrumb.Root>
-          </Topbar.Left>
-        </Topbar.Root>
+              </Breadcrumb.Item>
+              {isChaos && (
+                <>
+                  <Breadcrumb.Separator />
+                  <Breadcrumb.Item>
+                    <Breadcrumb.Page>Chaos Experiments</Breadcrumb.Page>
+                  </Breadcrumb.Item>
+                </>
+              )}
+            </Breadcrumb.List>
+          </Breadcrumb.Root>
+        </div>
       }
     >
       {children}
