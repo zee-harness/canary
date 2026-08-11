@@ -295,7 +295,7 @@ export const ChaosExperimentsView: React.FC = () => {
               Add filter
             </Button>
           </ListActions.Left>
-          <ListActions.Right>
+          <ListActions.Right className="gap-cn-xs">
             <Button variant="outline">
               <IconV2 name="sort-2" />
               Last executed
