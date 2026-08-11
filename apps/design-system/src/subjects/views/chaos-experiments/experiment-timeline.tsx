@@ -12,6 +12,9 @@ const TRAILING_PAD = 24
 const TOTAL_WIDTH = AXIS_START + MAX_SECONDS * PX_PER_SECOND + TRAILING_PAD
 const MIN_NODE_WIDTH = 8 // initial sliver before a node has visibly expanded
 const LANE_HEIGHT = 140
+
+/** Total run length: the longest path — probe (5s) == fault chain (3s + 2s). */
+export const RUN_DURATION_SECONDS = 5
 const BASE_CLOCK_SECONDS = 20 * 3600 + 15 * 60 + 8 // 20:15:08
 
 const pad2 = (n: number) => String(n).padStart(2, '0')

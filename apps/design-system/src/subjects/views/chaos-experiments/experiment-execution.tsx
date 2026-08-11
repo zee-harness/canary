@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
-import { RunningBadge, TimelineCanvas } from './experiment-timeline'
+import { RUN_DURATION_SECONDS, RunningBadge, TimelineCanvas } from './experiment-timeline'
 
 const formatDuration = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60)
@@ -84,7 +84,11 @@ export const ExperimentExecutionView = () => {
               <RunningBadge />
             )}
           </InfoItem>
-          <InfoItem label="Duration">{formatDuration(elapsedSeconds)}</InfoItem>
+          <InfoItem label="Duration">
+            {formatDuration(
+              timelineStatus === 'completed' ? RUN_DURATION_SECONDS : Math.min(elapsedSeconds, RUN_DURATION_SECONDS)
+            )}
+          </InfoItem>
           <InfoItem label="Created">3m ago</InfoItem>
           <InfoItem label="Infrastructure">k8s-agent-01</InfoItem>
           <InfoItem label="Resilience Score">Calculating...</InfoItem>
