@@ -2,47 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
-import { RunningBadge, TimelineSwimlanes } from './experiment-timeline'
-
-// Timeline axis: relative offsets (top row) + absolute clock times (bottom row).
-const RELATIVE_TIMES = [
-  '0s',
-  '10s',
-  '20s',
-  '30s',
-  '40s',
-  '50s',
-  '1m 0s',
-  '1m 10s',
-  '1m 20s',
-  '1m 30s',
-  '1m 40s',
-  '1m 50s',
-  '2m 0s',
-  '2m 10s'
-]
-const ABSOLUTE_TIMES = [
-  '3 Jun 20:15:08',
-  '20:15:18',
-  '20:15:28',
-  '20:15:38',
-  '20:15:48',
-  '20:15:58',
-  '20:16:08',
-  '20:16:18',
-  '20:16:28',
-  '20:16:38',
-  '20:16:48',
-  '20:16:58',
-  '20:17:08',
-  '20:17:18'
-]
-
-const COLUMN_WIDTH = 40
-const COLUMN_GAP = 64
-const AXIS_PADDING_X = 24
-// The starting-point line aligns with the centre of the first ("0s") column.
-const STARTING_POINT_X = AXIS_PADDING_X + COLUMN_WIDTH / 2
+import { RunningBadge, TimelineCanvas } from './experiment-timeline'
 
 const formatDuration = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60)
@@ -54,18 +14,6 @@ const InfoItem = ({ label, children }: { label: string; children: ReactNode }) =
   <div className="flex flex-col items-start" style={{ gap: 4 }}>
     <Text color="foreground-3">{label}</Text>
     {typeof children === 'string' ? <Text color="foreground-1">{children}</Text> : children}
-  </div>
-)
-
-const TickColumn = ({ label, small }: { label: string; small?: boolean }) => (
-  <div className="flex shrink-0 flex-col items-center" style={{ width: COLUMN_WIDTH, gap: 4 }}>
-    <span
-      className="text-cn-3 text-center font-mono"
-      style={{ fontSize: small ? 10 : 12, lineHeight: '18px', whiteSpace: 'nowrap' }}
-    >
-      {label}
-    </span>
-    <span style={{ width: 1, height: 9, backgroundColor: 'var(--cn-border-3)' }} />
   </div>
 )
 
@@ -157,37 +105,7 @@ export const ExperimentExecutionView = () => {
         className="min-h-0 flex-1 overflow-auto"
         style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-2))' }}
       >
-        <div style={{ width: 'max-content', minWidth: '100%' }}>
-          {/* time axis (sticky while scrolling vertically) */}
-          <div className="bg-cn-2 sticky top-0 z-10">
-            <div
-              className="border-cn-2 flex border-b"
-              style={{ gap: COLUMN_GAP, paddingLeft: AXIS_PADDING_X, paddingRight: AXIS_PADDING_X, paddingTop: 8 }}
-            >
-              {RELATIVE_TIMES.map(t => (
-                <TickColumn key={t} label={t} />
-              ))}
-            </div>
-            <div
-              className="border-cn-2 flex border-b"
-              style={{ gap: COLUMN_GAP, paddingLeft: AXIS_PADDING_X, paddingRight: AXIS_PADDING_X, paddingTop: 8 }}
-            >
-              {ABSOLUTE_TIMES.map((t, i) => (
-                <TickColumn key={i} label={t} small />
-              ))}
-            </div>
-          </div>
-
-          {/* swimlanes + starting point line */}
-          <div className="relative">
-            <div
-              aria-hidden
-              className="absolute bottom-0 top-0"
-              style={{ left: STARTING_POINT_X, borderLeft: '1px dashed var(--cn-border-3)' }}
-            />
-            <TimelineSwimlanes onStatusChange={setTimelineStatus} />
-          </div>
-        </div>
+        <TimelineCanvas onStatusChange={setTimelineStatus} />
       </div>
     </div>
   )
