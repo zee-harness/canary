@@ -99,9 +99,7 @@ const AnimatedNode = ({ duration, title, endWidth, footerLabel, finalStatus, ico
             </StatusBadge>
           )
         ) : (
-          <StatusBadge variant="secondary" theme="warning" icon="refresh-double" size="sm">
-            Running
-          </StatusBadge>
+          <RunningBadge />
         )}
       </div>
 
@@ -135,6 +133,17 @@ const AnimatedNode = ({ duration, title, endWidth, footerLabel, finalStatus, ico
 
 const FaultIcon = () => <IconV2 name="chaos-fault" size="md" className="text-cn-1 shrink-0" />
 const ProbeIcon = () => <IconV2 name="rt-probe" size="md" className="text-cn-1 shrink-0" />
+
+/**
+ * Mirrors StatusBadge's warning look but with a spinning icon (StatusBadge renders its icon
+ * statically and offers no spin hook). Uses the same `cn-badge*` classes so it matches.
+ */
+const RunningBadge = () => (
+  <div className="cn-badge cn-badge-secondary cn-badge-warning cn-badge-sm inline-flex w-fit items-center transition-colors">
+    <IconV2 name="refresh-double" className="animate-spin" />
+    Running
+  </div>
+)
 
 const Lane = ({ children }: { children?: ReactNode }) => (
   <div
