@@ -93,7 +93,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
       childrenWrapperClassName={childrenWrapperClassName}
       sidebar={<ResilienceTestsSidebar activeNav={activeNav} />}
       breadcrumbs={
-        <Topbar.Root className="bg-cn-0 sticky top-0 z-20">
+        <Topbar.Root className="bg-cn-1 sticky top-0 z-20">
           <Topbar.Left>
             <Breadcrumb.Root className="select-none">
               <Breadcrumb.List>
