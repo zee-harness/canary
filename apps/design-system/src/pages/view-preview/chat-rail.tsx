@@ -6,27 +6,50 @@ const suggestions = [
   { icon: 'warning-triangle', label: 'Analyze Pipeline Errors' }
 ] as const
 
-/**
- * The clickable grip on the left border of the main body that expands / collapses
- * the AI chat panel. Positioned on the inset gutter (6px) so it sits on the panel edge.
- */
+/** Two short vertical bars side-by-side — the grip used on the chat/body seam. */
+const Grip = () => (
+  <span className="flex items-center" style={{ gap: 3 }}>
+    <span className="bg-cn-3 transition-colors group-hover:bg-cn-1" style={{ width: 2, height: 22, borderRadius: 9999 }} />
+    <span className="bg-cn-3 transition-colors group-hover:bg-cn-1" style={{ width: 2, height: 22, borderRadius: 9999 }} />
+  </span>
+)
+
+/** Grip on the left border of the main body, used to collapse the chat when it's open. */
 export const ChatMarker = ({ open, onToggle }: { open: boolean; onToggle: () => void }) => (
   <button
     type="button"
     onClick={onToggle}
     aria-label={open ? 'Collapse AI chat' : 'Expand AI chat'}
-    className="group absolute top-1/2 z-20 flex items-center justify-center"
-    style={{ left: 6, transform: 'translate(-50%, -50%)', width: 18, height: 60 }}
+    className="group absolute z-20 flex items-center justify-center"
+    style={{ top: '50%', left: 6, transform: 'translate(-50%, -50%)', width: 18, height: 44 }}
   >
-    <span className="gap-cn-3xs flex flex-col items-center">
-      <span
-        className="bg-cn-3 transition-colors group-hover:bg-cn-1"
-        style={{ width: 3, height: 22, borderRadius: 9999 }}
-      />
-      <span
-        className="bg-cn-3 transition-colors group-hover:bg-cn-1"
-        style={{ width: 3, height: 22, borderRadius: 9999 }}
-      />
+    <Grip />
+  </button>
+)
+
+/**
+ * The collapsed AI chat: a thin card peeking out of the gutter just left of the main
+ * body (the "stacked cards" look) with the grip centered on it. Clicking expands the chat.
+ */
+export const CollapsedChatPeek = ({ onExpand }: { onExpand: () => void }) => (
+  <button
+    type="button"
+    onClick={onExpand}
+    aria-label="Expand AI chat"
+    className="group my-cn-2xs ml-cn-2xs relative shrink-0 self-stretch"
+    style={{
+      width: 14,
+      marginRight: -6,
+      borderRadius: 12,
+      border: '1px solid var(--cn-border-2)',
+      backgroundColor: 'var(--cn-bg-1)'
+    }}
+  >
+    <span
+      className="absolute flex items-center"
+      style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+    >
+      <Grip />
     </span>
   </button>
 )

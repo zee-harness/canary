@@ -6,7 +6,7 @@ import { noop } from '@utils/viewUtils'
 import { NavbarItemType, Sidebar, useSidebar } from '@harnessio/ui/components'
 import { MainContentLayout, SidebarView } from '@harnessio/views'
 
-import { ChatMarker, ChatPanel } from './chat-rail'
+import { ChatMarker, ChatPanel, CollapsedChatPeek } from './chat-rail'
 import { useRootViewWrapperStore } from './root-view-wrapper-store'
 
 export interface AppViewWrapperProps {
@@ -124,9 +124,13 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
             >
               {insetBody ? (
                 <>
-                  {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
+                  {chatOpen ? (
+                    <ChatPanel onClose={() => setChatOpen(false)} />
+                  ) : (
+                    <CollapsedChatPeek onExpand={() => setChatOpen(true)} />
+                  )}
                   <div className="relative flex min-w-0 flex-1 flex-col">
-                    <ChatMarker open={chatOpen} onToggle={() => setChatOpen(open => !open)} />
+                    {chatOpen && <ChatMarker open={chatOpen} onToggle={() => setChatOpen(open => !open)} />}
                     <div
                       id="main-content-layout"
                       className={`flex min-h-0 flex-1 flex-col overflow-hidden ${childrenWrapperClassName ?? ''}`}
