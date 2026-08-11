@@ -284,16 +284,18 @@ export const ChaosExperimentsView: React.FC = () => {
         {/* Filter / table actions toolbar */}
         <ListActions.Root>
           <ListActions.Left>
-            <SearchInput
-              inputContainerClassName="max-w-80"
-              placeholder="Search"
-              defaultValue={searchQuery}
-              onChange={setSearchQuery}
-            />
-            <Button variant="ghost">
-              <IconV2 name="plus" />
-              Add filter
-            </Button>
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <SearchInput
+                inputContainerClassName="max-w-80"
+                placeholder="Search"
+                defaultValue={searchQuery}
+                onChange={setSearchQuery}
+              />
+              <Button variant="ghost">
+                <IconV2 name="plus" />
+                Add filter
+              </Button>
+            </div>
           </ListActions.Left>
           <ListActions.Right className="gap-cn-xs">
             <Button variant="outline">
