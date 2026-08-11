@@ -2,6 +2,8 @@ import { ReactNode, useState } from 'react'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
+import { TimelineSwimlanes } from './experiment-timeline'
+
 // Timeline axis: relative offsets (top row) + absolute clock times (bottom row).
 const RELATIVE_TIMES = [
   '0s',
@@ -41,7 +43,6 @@ const COLUMN_GAP = 64
 const AXIS_PADDING_X = 24
 // The starting-point line aligns with the centre of the first ("0s") column.
 const STARTING_POINT_X = AXIS_PADDING_X + COLUMN_WIDTH / 2
-const SWIMLANE_COUNT = 8
 
 const InfoItem = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex flex-col items-start" style={{ gap: 4 }}>
@@ -150,9 +151,7 @@ export const ExperimentExecutionView = () => {
               className="absolute bottom-0 top-0"
               style={{ left: STARTING_POINT_X, borderLeft: '1px dashed var(--cn-border-3)' }}
             />
-            {Array.from({ length: SWIMLANE_COUNT }).map((_, i) => (
-              <div key={i} className="border-cn-2 border-b" style={{ height: 92 }} />
-            ))}
+            <TimelineSwimlanes />
           </div>
         </div>
       </div>
