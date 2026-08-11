@@ -120,7 +120,7 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
             )}
             <Sidebar.Inset
               className={insetBody ? 'flex' : undefined}
-              style={insetBody ? { backgroundColor: 'var(--cn-bg-0)' } : undefined}
+              style={insetBody ? { backgroundColor: 'var(--cn-comp-sidebar-bg)' } : undefined}
             >
               {insetBody ? (
                 <>
