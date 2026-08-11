@@ -1,9 +1,7 @@
-import { FC, PropsWithChildren, useState } from 'react'
+import { FC, PropsWithChildren } from 'react'
 
 import {
   Breadcrumb,
-  Button,
-  DropdownMenu,
   HarnessLogo,
   IconV2,
   SearchProvider,
@@ -13,7 +11,6 @@ import {
   Topbar,
   useSidebar
 } from '@harnessio/ui/components'
-import { CreateChaosExperimentDrawer } from '@subjects/views/chaos-experiments/create-chaos-experiment-drawer'
 
 import { AppViewWrapper, AppViewWrapperProps } from './app-view-wrapper'
 
@@ -78,45 +75,6 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
   )
 }
 
-const ChaosExperimentsActions = () => {
-  const [createDrawerOpen, setCreateDrawerOpen] = useState(false)
-
-  return (
-    <Topbar.Right>
-      <div className="gap-cn-sm flex items-center">
-        <Button variant="outline" theme="danger">
-          <IconV2 name="stop-solid" />
-          Abort all runs
-        </Button>
-        <Button variant="outline">
-          <IconV2 name="download" />
-          Download .CSV
-        </Button>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <Button>
-              <IconV2 name="plus" />
-              Create chaos experiment
-              <IconV2 name="nav-arrow-down" />
-            </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.IconItem
-              icon="empty-page"
-              title="Create from blank"
-              onClick={() => setCreateDrawerOpen(true)}
-            />
-            <DropdownMenu.IconItem icon="copy" title="Create from template" onClick={() => {}} />
-            <DropdownMenu.IconItem icon="upload" title="Upload YAML" onClick={() => {}} />
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-      </div>
-
-      <CreateChaosExperimentDrawer open={createDrawerOpen} onOpenChange={setCreateDrawerOpen} />
-    </Topbar.Right>
-  )
-}
-
 export interface ResilienceTestsViewWrapperProps extends Omit<AppViewWrapperProps, 'breadcrumbs' | 'sidebar'> {
   activeNav: ResilienceNav
 }
@@ -157,7 +115,6 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
               </Breadcrumb.List>
             </Breadcrumb.Root>
           </Topbar.Left>
-          {isChaos && <ChaosExperimentsActions />}
         </Topbar.Root>
       }
     >

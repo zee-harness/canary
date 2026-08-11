@@ -5,6 +5,7 @@ import type { ColumnDef, RowSelectionState, SortingState } from '@tanstack/react
 import {
   Button,
   DataTable,
+  DropdownMenu,
   IconV2,
   ListActions,
   LogoV2,
@@ -12,9 +13,11 @@ import {
   SearchInput,
   Spacer,
   StatusBadge,
-  Tabs
+  Text
 } from '@harnessio/ui/components'
 import { SandboxLayout } from '@harnessio/views'
+
+import { CreateChaosExperimentDrawer } from './create-chaos-experiment-drawer'
 
 type ExecutionStatus = 'running' | 'completed' | 'error' | 'suspended'
 type InfraType = 'k8s' | 'windows' | 'linux' | 'generic'
@@ -152,7 +155,7 @@ const statusConfig: Record<
 
 export const ChaosExperimentsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('chaos-experiments')
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [sorting, setSorting] = useState<SortingState>([])
   const [page, setPage] = useState(1)
@@ -271,12 +274,10 @@ export const ChaosExperimentsView: React.FC = () => {
   return (
     <SandboxLayout.Main>
       <SandboxLayout.Content>
-        {/* Tabs */}
-        <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-          <Tabs.List>
-            <Tabs.Trigger value="chaos-experiments">Chaos experiments</Tabs.Trigger>
-          </Tabs.List>
-        </Tabs.Root>
+        {/* Page header */}
+        <Text as="h1" variant="heading-section">
+          Chaos experiments
+        </Text>
 
         <Spacer size={5} />
 
@@ -289,24 +290,40 @@ export const ChaosExperimentsView: React.FC = () => {
               defaultValue={searchQuery}
               onChange={setSearchQuery}
             />
-            <div className="gap-cn-xs flex items-center">
-              <Button variant="outline">
-                <IconV2 name="filter-list" />
-                Infrastructure
-                <IconV2 name="nav-arrow-down" />
-              </Button>
-              <Button variant="ghost">
-                <IconV2 name="plus" />
-                Add filter
-              </Button>
-            </div>
+            <Button variant="ghost">
+              <IconV2 name="plus" />
+              Add filter
+            </Button>
           </ListActions.Left>
           <ListActions.Right>
+            <Button variant="outline">
+              <IconV2 name="sort-2" />
+              Last executed
+              <IconV2 name="nav-arrow-down" />
+            </Button>
             <Button variant="outline">
               <IconV2 name="view-columns-2" />
               Columns 6/10
               <IconV2 name="nav-arrow-down" />
             </Button>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <Button>
+                  <IconV2 name="plus" />
+                  New experiment
+                  <IconV2 name="nav-arrow-down" />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                <DropdownMenu.IconItem
+                  icon="empty-page"
+                  title="Create from blank"
+                  onClick={() => setCreateDrawerOpen(true)}
+                />
+                <DropdownMenu.IconItem icon="copy" title="Create from template" onClick={() => {}} />
+                <DropdownMenu.IconItem icon="upload" title="Upload YAML" onClick={() => {}} />
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           </ListActions.Right>
         </ListActions.Root>
 
@@ -332,6 +349,8 @@ export const ChaosExperimentsView: React.FC = () => {
             onPageSizeChange: setPageSize
           }}
         />
+
+        <CreateChaosExperimentDrawer open={createDrawerOpen} onOpenChange={setCreateDrawerOpen} />
       </SandboxLayout.Content>
     </SandboxLayout.Main>
   )
