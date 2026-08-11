@@ -51,6 +51,13 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
     </Sidebar.Header>
     <Sidebar.Content>
       <Sidebar.Group>
+        <Sidebar.Item icon="view-grid" title="Home" />
+        <Sidebar.Item icon="menu-more-horizontal" title="More" withRightIndicator />
+      </Sidebar.Group>
+
+      <Sidebar.Separator />
+
+      <Sidebar.Group>
         <Sidebar.Item icon="chaos-tests" title="Resilience Tests" defaultSubmenuOpen>
           <Sidebar.MenuSubItem to={OVERVIEW_ROUTE} end active={activeNav === 'overview'} title="Overview" />
           <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/insights`} title="Insights" />
@@ -67,7 +74,9 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
       </Sidebar.Group>
     </Sidebar.Content>
     <Sidebar.Footer>
-      <Sidebar.ToggleMenuButton />
+      {/* Avatar name is spaced ("Bradley Rydzewski") so initials resolve to "BR",
+          while the visible label keeps the hyphenated username. */}
+      <Sidebar.Item avatarFallback="Bradley Rydzewski" title="bradley-rydzewski" withRightIndicator />
     </Sidebar.Footer>
     <Sidebar.Rail />
   </Sidebar.Root>
