@@ -5,7 +5,7 @@ import { IconV2, StatusBadge } from '@harnessio/ui/components'
 // --- Shared coordinate system -------------------------------------------------------------
 // A single pixels-per-second scale is used by BOTH the time axis (spacing between 1s ticks)
 // and the node expansion, so a node that has run Xs ends exactly at the Xs tick.
-const PX_PER_SECOND = 64
+const PX_PER_SECOND = 104
 const AXIS_START = 44 // x of the "0s" tick / starting-point line / node anchor
 const MAX_SECONDS = 30 // how far the axis extends
 const TRAILING_PAD = 24
