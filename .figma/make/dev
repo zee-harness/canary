@@ -1,0 +1,10 @@
+#!/bin/bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/_toolchain.sh"
+cd "$SCRIPT_DIR/../.."
+
+# Starts the design-system preview app (Vite dev server). Packages are already
+# built by install/, so this just serves the app. Vite listens on port 5173.
+echo "Starting design-system dev server..."
+pnpm -F ./apps/design-system dev

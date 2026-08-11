@@ -12,13 +12,16 @@ export interface AppViewWrapperProps {
   asChild?: boolean
   breadcrumbs?: ReactNode
   childrenWrapperClassName?: string
+  /** Optional custom sidebar. When provided, it replaces the default app SidebarView. */
+  sidebar?: ReactNode
 }
 
 export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
   children,
   breadcrumbs,
   childrenWrapperClassName,
-  asChild = false
+  asChild = false,
+  sidebar
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
@@ -90,24 +93,26 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
         path="*"
         element={
           <Sidebar.Provider>
-            <SidebarView
-              showMoreMenu={showMoreMenu}
-              showSettingMenu={showSettingsMenu}
-              handleMoreMenu={onToggleMoreMenu}
-              handleSettingsMenu={onToggleSettingsMenu}
-              currentUser={undefined}
-              handleCustomNav={noop}
-              handleLogOut={noop}
-              recentMenuItems={recentMenu}
-              pinnedMenuItems={pinnedMenu}
-              handleChangePinnedMenuItem={setPinned}
-              handleRemoveRecentMenuItem={noop}
-              changeLanguage={noop}
-              lang="en"
-              moreMenu={moreMenu}
-              settingsMenu={settingsMenu}
-              useSidebar={useSidebar}
-            />
+            {sidebar ?? (
+              <SidebarView
+                showMoreMenu={showMoreMenu}
+                showSettingMenu={showSettingsMenu}
+                handleMoreMenu={onToggleMoreMenu}
+                handleSettingsMenu={onToggleSettingsMenu}
+                currentUser={undefined}
+                handleCustomNav={noop}
+                handleLogOut={noop}
+                recentMenuItems={recentMenu}
+                pinnedMenuItems={pinnedMenu}
+                handleChangePinnedMenuItem={setPinned}
+                handleRemoveRecentMenuItem={noop}
+                changeLanguage={noop}
+                lang="en"
+                moreMenu={moreMenu}
+                settingsMenu={settingsMenu}
+                useSidebar={useSidebar}
+              />
+            )}
             <Sidebar.Inset>
               {breadcrumbs}
               <MainContentLayout className={childrenWrapperClassName} withBreadcrumbs>

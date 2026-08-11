@@ -37,6 +37,18 @@ const collapsedSidebarStyles: CSSRuleObject = {
     '@apply ml-0': ''
   },
 
+  // Collapse the header search down to just its icon so the (content-driven)
+  // sidebar width can shrink to the icon rail instead of being held open by the input.
+  '.cn-sidebar-header': {
+    padding: 'var(--cn-sidebar-container-py) var(--cn-sidebar-item-container)',
+    '.cn-input-input, .cn-input-suffix': {
+      '@apply w-0 min-w-0 flex-none overflow-hidden p-0 opacity-0': ''
+    },
+    '.cn-input-container': {
+      '@apply w-fit min-w-0': ''
+    }
+  },
+
   '.cn-sidebar-group': {
     '--sidebar-group-label-scale': '0',
     '&-header': {
@@ -117,6 +129,12 @@ export default {
       '&-wrapper': {
         '@apply flex-1 overflow-hidden relative': ''
       }
+    },
+
+    '&-header': {
+      padding: 'var(--cn-sidebar-container-py) var(--cn-sidebar-container-px)',
+      flexShrink: '0',
+      '@apply transition-[padding] duration-150 ease-linear': ''
     },
 
     '&-footer': {

@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/_toolchain.sh"
+cd "$SCRIPT_DIR/../.."
+
+# Installs workspace dependencies and builds the shared component packages.
+#
+# The design-system preview app imports the libraries (@harnessio/ui, etc.) from
+# their built dist/ output — not their source — so the packages must be built
+# once before the dev server can resolve those imports. We do that here rather
+# than in dev/ so the server starts fast and verify/ isn't waiting on a build.
+
+echo "Installing workspace dependencies..."
+pnpm install
+
+echo "Building component packages..."
+pnpm -r -F './packages/*' build
+
+echo "Dependencies installed and packages built."

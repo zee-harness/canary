@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/_toolchain.sh"
+
+# Installs system-level toolchains. Cached after the first run, so this script
+# checks for what it needs before downloading anything.
+
+echo "Checking system dependencies..."
+
+# Node — no system Node / Homebrew on this machine, so we fetch the official
+# prebuilt binary into a persistent cache ($NODE_HOME, added to PATH above).
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node not found — installing pinned Node $NODE_VERSION ($NODE_PLATFORM-$NODE_ARCH)..."
+  mkdir -p "$TOOLCHAIN_ROOT"
+  TARBALL="node-$NODE_VERSION-$NODE_PLATFORM-$NODE_ARCH.tar.gz"
+  URL="https://nodejs.org/dist/$NODE_VERSION/$TARBALL"
+  TMP="$(mktemp -d)"
+  curl -fsSL "$URL" -o "$TMP/$TARBALL"
+  tar -xzf "$TMP/$TARBALL" -C "$TOOLCHAIN_ROOT"
+  rm -rf "$TMP"
+fi
+echo "Node $(node --version) OK"
+
+# pnpm — this monorepo pins pnpm 9.5.0 via package.json "packageManager". We
+# install that exact version globally with npm. (Corepack would be the usual
+# route, but the corepack bundled with this Node has a stale signing-key bug
+# that breaks pnpm metadata verification, so we install pnpm directly.)
+PNPM_VERSION="9.5.0"
+if [[ "$(pnpm --version 2>/dev/null)" != "$PNPM_VERSION" ]]; then
+  echo "Installing pnpm $PNPM_VERSION"
+  # --force so re-runs (or leftover corepack shims) don't trip an EEXIST.
+  npm install -g --force "pnpm@$PNPM_VERSION" >/dev/null 2>&1
+fi
+echo "pnpm $(pnpm --version) OK"
+
+echo "System dependencies verified."

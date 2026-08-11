@@ -11,6 +11,8 @@ import DataTableDemo from '@subjects/views/data-table-demo'
 import DataTableGroupedHeadersDemo from '@subjects/views/data-table-grouped-headers-demo'
 import DataTablePinnedRowsDemo from '@subjects/views/data-table-pinned-rows-demo'
 import DataTableStickyHeaderDemo from '@subjects/views/data-table-sticky-header-demo'
+import ChaosExperimentsView from '@subjects/views/chaos-experiments/chaos-experiments'
+import { ResilienceOverview } from '@subjects/views/chaos-experiments/resilience-overview'
 import DraggableCardsDemo from '@subjects/views/draggable-cards-demo'
 import ExecutionListWrapper from '@subjects/views/execution-list/execution-list'
 import GaugeDemo from '@subjects/views/gauge-demo'
@@ -68,6 +70,7 @@ import { ProjectSettingsWrapper } from './project-settings-wrapper'
 import PullRequestLayoutWrapper from './pull-request-layout-wrapper'
 import { RepoFilesViewWrapper } from './repo-files-view-wrapper'
 import RepoViewWrapper from './repo-view-wrapper'
+import ResilienceTestsViewWrapper from './resilience-tests-view-wrapper'
 import RootViewWrapper from './root-view-wrapper'
 import ViewSettings from './view-settings'
 
@@ -338,6 +341,27 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
           <RepoViewWrapper>
             <PipelineGraphMinimalWrapper />
           </RepoViewWrapper>
+        )
+      }
+    }
+  },
+  resilienceTesting: {
+    label: 'Resilience Testing',
+    items: {
+      overview: {
+        label: 'Overview',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="overview">
+            <ResilienceOverview />
+          </ResilienceTestsViewWrapper>
+        )
+      },
+      'chaos-experiments': {
+        label: 'Chaos Experiments',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="chaos-experiments">
+            <ChaosExperimentsView />
+          </ResilienceTestsViewWrapper>
         )
       }
     }

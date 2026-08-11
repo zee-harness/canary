@@ -1,0 +1,5 @@
+PORT=5173
+FIGMA_MAKE_URL=http://localhost:5173
+# Building all component packages during install can take several minutes on a
+# cold checkout, so we give bootstrap a generous ceiling (15 minutes, in ms).
+BOOTSTRAP_TIMEOUT=900000
