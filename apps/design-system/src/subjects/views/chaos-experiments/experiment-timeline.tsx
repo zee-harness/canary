@@ -1,6 +1,6 @@
 import { memo, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-import { IconV2, StatusBadge } from '@harnessio/ui/components'
+import { IconV2, StatusBadge, Text } from '@harnessio/ui/components'
 
 // --- Shared coordinate system -------------------------------------------------------------
 // A single pixels-per-second scale is used by BOTH the time axis (spacing between 1s ticks)
@@ -126,14 +126,14 @@ const AnimatedNode = ({ duration, title, footerLabel, finalStatus, icon, onCompl
       >
         <div className="flex items-center" style={{ gap: 6, padding: '8px 12px', minHeight: 44 }}>
           {icon}
-          <span className="text-cn-1" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>
+          <Text as="span" variant="body-single-line-normal" color="foreground-1" className="whitespace-nowrap">
             {title}
-          </span>
+          </Text>
         </div>
         <div className="bg-cn-2 border-cn-2 border-t" style={{ padding: '8px 12px' }}>
-          <span className="text-cn-2 font-mono" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+          <Text as="span" variant="caption-single-line-code" color="foreground-2" className="whitespace-nowrap">
             {footerLabel}: {seconds}s
-          </span>
+          </Text>
         </div>
       </div>
     </div>
@@ -172,12 +172,16 @@ const TickStrip = ({ format, small }: { format: (i: number) => string; small?: b
         className="absolute flex flex-col items-center"
         style={{ left: AXIS_START + i * PX_PER_SECOND, top: 6, transform: 'translateX(-50%)' }}
       >
-        <span
-          className="text-cn-3 text-center font-mono"
-          style={{ fontSize: small ? 10 : 11, lineHeight: '16px', whiteSpace: 'nowrap' }}
+        <Text
+          as="span"
+          variant="caption-single-line-code"
+          color="foreground-3"
+          align="center"
+          className="whitespace-nowrap"
+          style={small ? { fontSize: 10 } : undefined}
         >
           {format(i)}
-        </span>
+        </Text>
         <span style={{ width: 1, height: 8, marginTop: 3, backgroundColor: 'var(--cn-border-3)' }} />
       </div>
     ))}
