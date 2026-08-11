@@ -6,6 +6,7 @@ import { noop } from '@utils/viewUtils'
 import { NavbarItemType, Sidebar, useSidebar } from '@harnessio/ui/components'
 import { MainContentLayout, SidebarView } from '@harnessio/views'
 
+import { ChatMarker, ChatPanel } from './chat-rail'
 import { useRootViewWrapperStore } from './root-view-wrapper-store'
 
 export interface AppViewWrapperProps {
@@ -14,6 +15,8 @@ export interface AppViewWrapperProps {
   childrenWrapperClassName?: string
   /** Optional custom sidebar. When provided, it replaces the default app SidebarView. */
   sidebar?: ReactNode
+  /** When true, the main body renders as a rounded, bordered inset panel (prod look). */
+  insetBody?: boolean
 }
 
 export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
@@ -21,10 +24,12 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
   breadcrumbs,
   childrenWrapperClassName,
   asChild = false,
-  sidebar
+  sidebar,
+  insetBody = false
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showSettingsMenu, setShowSettingsMenu] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const [pinnedMenu, setPinnedMenu] = useState<NavbarItemType[]>([
     {
       id: 0,
@@ -113,11 +118,29 @@ export const AppViewWrapper: FC<PropsWithChildren<AppViewWrapperProps>> = ({
                 useSidebar={useSidebar}
               />
             )}
-            <Sidebar.Inset>
-              {breadcrumbs}
-              <MainContentLayout className={childrenWrapperClassName} withBreadcrumbs>
-                <Outlet />
-              </MainContentLayout>
+            <Sidebar.Inset
+              className={insetBody ? 'flex' : undefined}
+              style={insetBody ? { backgroundColor: 'var(--cn-bg-0)' } : undefined}
+            >
+              {insetBody ? (
+                <>
+                  {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
+                  <div className="relative flex min-w-0 flex-1 flex-col">
+                    <ChatMarker open={chatOpen} onToggle={() => setChatOpen(open => !open)} />
+                    <MainContentLayout className={childrenWrapperClassName} enableInset>
+                      {breadcrumbs}
+                      <Outlet />
+                    </MainContentLayout>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {breadcrumbs}
+                  <MainContentLayout className={childrenWrapperClassName} withBreadcrumbs>
+                    <Outlet />
+                  </MainContentLayout>
+                </>
+              )}
             </Sidebar.Inset>
           </Sidebar.Provider>
         }

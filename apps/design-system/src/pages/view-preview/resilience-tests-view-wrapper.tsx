@@ -91,6 +91,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
     <AppViewWrapper
       asChild={asChild}
       childrenWrapperClassName={childrenWrapperClassName}
+      insetBody
       sidebar={<ResilienceTestsSidebar activeNav={activeNav} />}
       breadcrumbs={
         <Topbar.Root className="bg-cn-1 sticky top-0 z-20">
