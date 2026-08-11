@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
 import { IconV2, StatusBadge } from '@harnessio/ui/components'
 
@@ -159,24 +159,26 @@ const Lane = ({ children }: { children?: ReactNode }) => (
  * first (nginx-pod-delete → node-cpu-hog); a probe runs on its own lane; once everything
  * settles the whole sequence resets and loops.
  */
-export const TimelineSwimlanes = ({
+export const TimelineSwimlanes = memo(function TimelineSwimlanes({
   laneCount = 8,
   onStatusChange
 }: {
   laneCount?: number
   /** Reports the overall timeline status as the run completes and loops. */
   onStatusChange?: (status: 'running' | 'completed') => void
-}) => {
+}) {
   const [runId, setRunId] = useState(0)
   const [showSecondFault, setShowSecondFault] = useState(false)
   const onStatusChangeRef = useRef(onStatusChange)
   onStatusChangeRef.current = onStatusChange
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const handleFirstFaultComplete = useCallback(() => setShowSecondFault(true), [])
   const handleProbeComplete = useCallback(() => {
     // The probe is the longest node, so its completion means the whole run is done.
     onStatusChangeRef.current?.('completed')
-    setTimeout(() => {
+    clearTimeout(resetTimerRef.current)
+    resetTimerRef.current = setTimeout(() => {
       setShowSecondFault(false)
       setRunId(id => id + 1)
       onStatusChangeRef.current?.('running')
@@ -232,4 +234,4 @@ export const TimelineSwimlanes = ({
       ))}
     </>
   )
-}
+})

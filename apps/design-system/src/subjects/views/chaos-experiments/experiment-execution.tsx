@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
@@ -44,6 +44,12 @@ const AXIS_PADDING_X = 24
 // The starting-point line aligns with the centre of the first ("0s") column.
 const STARTING_POINT_X = AXIS_PADDING_X + COLUMN_WIDTH / 2
 
+const formatDuration = (totalSeconds: number) => {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`
+}
+
 const InfoItem = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="flex flex-col items-start" style={{ gap: 4 }}>
     <Text color="foreground-3">{label}</Text>
@@ -66,6 +72,29 @@ const TickColumn = ({ label, small }: { label: string; small?: boolean }) => (
 export const ExperimentExecutionView = () => {
   const [activeTab, setActiveTab] = useState('timeline')
   const [timelineStatus, setTimelineStatus] = useState<'running' | 'completed'>('running')
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const statusRef = useRef(timelineStatus)
+  statusRef.current = timelineStatus
+  const runStartRef = useRef(0)
+
+  // Stamp the run's start whenever a new run begins (so the counter restarts from 0s).
+  useEffect(() => {
+    if (timelineStatus === 'running') {
+      runStartRef.current = performance.now()
+      setElapsedSeconds(0)
+    }
+  }, [timelineStatus])
+
+  // Tick while running; derive elapsed from the start timestamp so the value is correct
+  // regardless of how many timers fire, and freezes once completed.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (statusRef.current === 'running') {
+        setElapsedSeconds(Math.floor((performance.now() - runStartRef.current) / 1000))
+      }
+    }, 500)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <div className="flex h-full flex-col">
@@ -107,7 +136,7 @@ export const ExperimentExecutionView = () => {
               <RunningBadge />
             )}
           </InfoItem>
-          <InfoItem label="Duration">1m 25s</InfoItem>
+          <InfoItem label="Duration">{formatDuration(elapsedSeconds)}</InfoItem>
           <InfoItem label="Created">3m ago</InfoItem>
           <InfoItem label="Infrastructure">k8s-agent-01</InfoItem>
           <InfoItem label="Resilience Score">Calculating...</InfoItem>
