@@ -11,9 +11,9 @@ const Bar = () => (
 )
 
 /**
- * Grip straddling the seam between the chat (or collapsed peek) and the main body — two
- * thin vertical bars, one either side of the seam. `seamX` is the seam's x offset within
- * the (relative) body column. Sits above the main panel so both bars stay visible.
+ * Grip marker sitting on the seam between the chat (or collapsed peek) and the main body —
+ * a single thin vertical bar on the main body's border. `seamX` is the seam's x offset
+ * within the (relative) body column. Sits above the main panel so it stays visible.
  */
 export const SeamGrip = ({ open, onToggle, seamX }: { open: boolean; onToggle: () => void; seamX: number }) => (
   <button
@@ -21,9 +21,8 @@ export const SeamGrip = ({ open, onToggle, seamX }: { open: boolean; onToggle: (
     onClick={onToggle}
     aria-label={open ? 'Collapse AI chat' : 'Expand AI chat'}
     className="group absolute z-20 flex items-center justify-center"
-    style={{ top: '50%', left: seamX, transform: 'translate(-50%, -50%)', width: 22, height: 44, gap: 8 }}
+    style={{ top: '50%', left: seamX, transform: 'translate(-50%, -50%)', width: 16, height: 44 }}
   >
-    <Bar />
     <Bar />
   </button>
 )
