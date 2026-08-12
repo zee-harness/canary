@@ -9,7 +9,15 @@ type ResilienceNav = 'overview' | 'chaos-experiments'
 const OVERVIEW_ROUTE = '/view-preview/overview'
 const CHAOS_ROUTE = '/view-preview/chaos-experiments'
 
-const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => {
+const ResilienceTestsSidebar = ({
+  activeNav,
+  chaosLeafActive = false
+}: {
+  activeNav: ResilienceNav
+  /** True when on a page nested under Chaos Experiments (e.g. an execution), so the
+      Chaos Experiments crumb stays selected even though the child route doesn't match. */
+  chaosLeafActive?: boolean
+}) => {
   const { state } = useSidebar()
   const collapsed = state === 'collapsed'
 
@@ -53,6 +61,9 @@ const ResilienceTestsSidebar = ({ activeNav }: { activeNav: ResilienceNav }) => 
             to={CHAOS_ROUTE}
             end
             active={activeNav === 'chaos-experiments'}
+            // On a nested page (e.g. an execution) the child route won't match this link,
+            // so force the selected style to keep Chaos Experiments highlighted.
+            className={chaosLeafActive ? 'active' : undefined}
             title="Chaos Experiments"
           />
           <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/load-tests`} title="Load Tests" />
@@ -92,7 +103,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
       asChild={asChild}
       childrenWrapperClassName={childrenWrapperClassName}
       insetBody
-      sidebar={<ResilienceTestsSidebar activeNav={activeNav} />}
+      sidebar={<ResilienceTestsSidebar activeNav={activeNav} chaosLeafActive={isChaos && hasLeaf} />}
       breadcrumbs={
         <div
           className="bg-cn-1 flex items-center"
