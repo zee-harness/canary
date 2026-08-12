@@ -34,7 +34,7 @@ function AddStepNodeComponent() {
     <button
       type="button"
       onClick={onOpen}
-      className="relative size-full text-left"
+      className="relative flex size-full flex-col text-left"
       style={{
         borderRadius: 8,
         backgroundColor: 'var(--cn-bg-3)',
