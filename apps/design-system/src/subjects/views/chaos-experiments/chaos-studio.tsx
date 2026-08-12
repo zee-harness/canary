@@ -1,13 +1,6 @@
 import { useState } from 'react'
 
-import {
-  AnyContainerNodeType,
-  CanvasProvider,
-  ContainerNode,
-  LeafNodeInternalType,
-  NodeContent,
-  PipelineGraph
-} from '@harnessio/pipeline-graph'
+import { AnyContainerNodeType, CanvasProvider, ContainerNode, NodeContent, PipelineGraph } from '@harnessio/pipeline-graph'
 import { Button, IconV2, Select, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 
@@ -18,15 +11,12 @@ import '@harnessio/pipeline-graph/dist/index.css'
 const StartNodeComponent = () => <PipelineNodes.StartNode />
 const EndNodeComponent = () => <PipelineNodes.EndNode />
 
-interface StepNodeDataType {
-  name?: string
-  icon?: React.ReactElement
-}
-
-/** The single empty-step placeholder shown on a fresh chaos experiment. */
-function AddStepNodeComponent({ node }: { node: LeafNodeInternalType<StepNodeDataType> }) {
-  const { name, icon } = node.data
-  return <PipelineNodes.StepNode name={name} icon={icon} onEllipsisClick={() => undefined} onClick={() => undefined} />
+/**
+ * The empty-pipeline placeholder: a circular "+" add node — the same affordance the real
+ * pipeline studio shows when a pipeline has no steps yet (not a populated step card).
+ */
+function AddStepNodeComponent() {
+  return <PipelineNodes.AddNode onClick={() => undefined} />
 }
 
 enum ChaosNodeType {
@@ -41,17 +31,10 @@ const nodes: NodeContent[] = [
   { type: ChaosNodeType.End, containerType: ContainerNode.leaf, component: EndNodeComponent }
 ]
 
-// start → empty "Add step" → end
+// Empty pipeline: start → circular add node → end
 const data: AnyContainerNodeType[] = [
   { type: ChaosNodeType.Start, data: {}, config: { width: 40, height: 40, hideLeftPort: true } },
-  {
-    type: ChaosNodeType.AddStep,
-    data: {
-      name: 'Add step',
-      icon: <IconV2 name="plus" size="lg" className="m-cn-xs text-cn-2" />
-    } satisfies StepNodeDataType,
-    config: { width: 200, height: 80 }
-  },
+  { type: ChaosNodeType.AddStep, data: {}, config: { width: 40, height: 40 } },
   { type: ChaosNodeType.End, data: {}, config: { width: 40, height: 40, hideRightPort: true } }
 ]
 
