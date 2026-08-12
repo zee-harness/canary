@@ -48,7 +48,7 @@ const data: AnyContainerNodeType[] = [
     type: ChaosNodeType.AddStep,
     data: {
       name: 'Add step',
-      icon: <IconV2 name="plus" size="lg" className="m-cn-xs" />
+      icon: <IconV2 name="plus" size="lg" className="m-cn-xs text-cn-2" />
     } satisfies StepNodeDataType,
     config: { width: 200, height: 80 }
   },
