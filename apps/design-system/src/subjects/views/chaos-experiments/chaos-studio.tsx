@@ -100,12 +100,11 @@ export const ChaosStudioView = () => {
 
       {/* Studio: visual/yaml toolbar + canvas + status footer */}
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Toolbar */}
-        <div
-          className="border-cn-2 flex shrink-0 items-center border-b"
-          style={{ paddingLeft: 24, paddingRight: 24, height: 48 }}
-        >
-          <div className="flex-1" />
+        {/* The dotted grid spans the whole area; toolbar floats on top (no bar / divider). */}
+        <div className="cn-graph-bg-size bg-cn-graph-bg-gradient relative flex min-h-0 flex-1 flex-col">
+          {/* Toolbar */}
+          <div className="flex shrink-0 items-center" style={{ paddingLeft: 24, paddingRight: 24, height: 48 }}>
+            <div className="flex-1" />
           <VisualYamlToggle view={view} setView={setView} isYamlValid />
           <div className="flex flex-1 items-center justify-end">
             <Button variant="ghost" size="sm" iconOnly aria-label="Settings" tooltipProps={{ content: 'Settings' }}>
@@ -114,8 +113,8 @@ export const ChaosStudioView = () => {
           </div>
         </div>
 
-        {/* Canvas — dotted grid background matches prod's pipeline studio */}
-        <div className="cn-graph-bg-size bg-cn-graph-bg-gradient relative flex min-h-0 flex-1">
+          {/* Canvas */}
+          <div className="relative flex min-h-0 flex-1">
           <CanvasProvider>
             <PipelineGraph
               data={data}
@@ -127,6 +126,7 @@ export const ChaosStudioView = () => {
               edgesConfig={{ radius: 10, parallelNodeOffset: 10, serialNodeOffset: 10 }}
             />
           </CanvasProvider>
+          </div>
         </div>
 
         {/* Status footer: problems · repo · branch · sync state */}
