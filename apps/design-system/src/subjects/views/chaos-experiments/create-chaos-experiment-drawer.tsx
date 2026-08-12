@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Accordion, Button, CardSelect, Drawer, IconV2, Label, LogoV2, Text, TextInput } from '@harnessio/ui/components'
 
@@ -13,6 +14,7 @@ interface CreateChaosExperimentDrawerProps {
 type InfraType = 'kubernetes' | 'linux' | 'windows'
 
 export const CreateChaosExperimentDrawer: React.FC<CreateChaosExperimentDrawerProps> = ({ open, onOpenChange }) => {
+  const navigate = useNavigate()
   const [name, setName] = useState('nginx-pod-delete-test')
   const [infraType, setInfraType] = useState<InfraType>('kubernetes')
   const [environment, setEnvironment] = useState<EnvironmentOption>()
@@ -21,6 +23,12 @@ export const CreateChaosExperimentDrawer: React.FC<CreateChaosExperimentDrawerPr
   const [infraDrawerOpen, setInfraDrawerOpen] = useState(false)
 
   const handleClose = () => onOpenChange(false)
+
+  // Selecting env + infra and submitting drops the user into the Chaos Studio.
+  const handleSubmit = () => {
+    onOpenChange(false)
+    navigate('/view-preview/chaos-experiments/studio')
+  }
 
   const handleSelectEnvironment = (env: EnvironmentOption) => {
     setEnvironment(env)
@@ -140,7 +148,7 @@ export const CreateChaosExperimentDrawer: React.FC<CreateChaosExperimentDrawerPr
             <Button variant="secondary" onClick={handleClose}>
               Cancel
             </Button>
-            <Button onClick={handleClose}>Submit</Button>
+            <Button onClick={handleSubmit}>Submit</Button>
           </div>
         </Drawer.Footer>
       </Drawer.Content>
