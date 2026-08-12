@@ -107,23 +107,25 @@ export const ChaosStudioView = () => {
         >
           <div className="flex-1" />
           <VisualYamlToggle view={view} setView={setView} isYamlValid />
-          <div className="flex flex-1 items-center justify-end" style={{ gap: 4 }}>
-            <Button variant="ghost" size="sm" iconOnly aria-label="Copy" tooltipProps={{ content: 'Copy' }}>
-              <IconV2 name="copy" />
-            </Button>
-            <Button variant="ghost" size="sm" iconOnly aria-label="Download" tooltipProps={{ content: 'Download' }}>
-              <IconV2 name="download" />
-            </Button>
+          <div className="flex flex-1 items-center justify-end">
             <Button variant="ghost" size="sm" iconOnly aria-label="Settings" tooltipProps={{ content: 'Settings' }}>
               <IconV2 name="settings" />
             </Button>
           </div>
         </div>
 
-        {/* Canvas */}
-        <div className="relative min-h-0 flex-1">
+        {/* Canvas — dotted grid background matches prod's pipeline studio */}
+        <div className="cn-graph-bg-size bg-cn-graph-bg-gradient relative flex min-h-0 flex-1">
           <CanvasProvider>
-            <PipelineGraph data={data} nodes={nodes} />
+            <PipelineGraph
+              data={data}
+              nodes={nodes}
+              customCreateSVGPath={({ id, path }) => ({
+                level1: `<path d="${path}" id="${id}" fill="none" stroke="var(--cn-border-1)" />`,
+                level2: ''
+              })}
+              edgesConfig={{ radius: 10, parallelNodeOffset: 10, serialNodeOffset: 10 }}
+            />
           </CanvasProvider>
         </div>
 
