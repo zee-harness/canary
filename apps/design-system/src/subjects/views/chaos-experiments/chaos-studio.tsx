@@ -181,8 +181,8 @@ const STEP_OPTIONS: StepOption[] = [
 const AddStepCard = ({ icon, title, description }: StepOption) => (
   <button
     type="button"
-    className="border-cn-2 hover:bg-cn-2 flex w-full items-start rounded-cn-3 border text-left transition-colors"
-    style={{ gap: 12, padding: 16 }}
+    className="hover:bg-cn-2 flex w-full items-start rounded-cn-3 text-left transition-colors"
+    style={{ gap: 12, padding: 16, border: '1px solid var(--cn-border-2)' }}
   >
     {/* Light chip with a dark glyph (inverted via tokens) to match prod. */}
     <div
