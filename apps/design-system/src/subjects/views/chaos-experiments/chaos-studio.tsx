@@ -7,6 +7,12 @@ import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 // The pipeline-graph ships its own stylesheet for the canvas / edges / nodes.
 import '@harnessio/pipeline-graph/dist/index.css'
 
+// Smiley placeholder glyph exported from the design (no DS icon matches). Inlined as a
+// data-URI mask so it can be tinted with a theme token and avoids SVG-asset resolution quirks.
+import addStepIconRaw from './add-step-icon.svg?raw'
+
+const addStepIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepIconRaw)}")`
+
 // Lets the graph's Add-step card reflect (selected) and trigger the drawer owned by the view.
 const AddStepContext = createContext<{ selected: boolean; onOpen: () => void }>({
   selected: false,
@@ -17,27 +23,63 @@ const AddStepContext = createContext<{ selected: boolean; onOpen: () => void }>(
 const StartNodeComponent = () => <PipelineNodes.StartNode />
 const EndNodeComponent = () => <PipelineNodes.EndNode />
 
-/** The empty-step placeholder card; shows a brand-blue selected border while its drawer is open. */
+/**
+ * The empty-step placeholder card: a header (smiley icon + "Add step" + more button) over an
+ * empty body, with a brand-blue selected border + ring while its drawer is open. Custom-built
+ * because the design's layout (header on top, empty body) differs from the DS StepNode.
+ */
 function AddStepNodeComponent() {
   const { selected, onOpen } = useContext(AddStepContext)
   return (
-    <div
-      className="size-full"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="relative size-full text-left"
       style={{
         borderRadius: 8,
-        // StepNode's own selected state is only a gray border; overlay a brand outline to match the design.
-        outline: selected ? '1px solid var(--cn-border-brand)' : undefined,
-        outlineOffset: -1
+        backgroundColor: 'var(--cn-bg-3)',
+        border: `1px solid ${selected ? 'var(--cn-border-brand)' : 'var(--cn-border-2)'}`,
+        boxShadow: selected
+          ? '0 0 0 4px color-mix(in srgb, var(--cn-border-brand) 15%, transparent)'
+          : '0 2px 8px -2px rgba(0, 0, 0, 0.25)'
       }}
     >
-      <PipelineNodes.StepNode
-        name="Add step"
-        icon={<IconV2 name="plus" size="lg" className="m-cn-xs text-cn-2" />}
-        selected={selected}
-        onClick={onOpen}
-        onEllipsisClick={() => undefined}
-      />
-    </div>
+      <div
+        className="flex items-center"
+        style={{ gap: 6, minHeight: 44, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
+      >
+        <span
+          aria-hidden
+          className="shrink-0"
+          style={{
+            width: 22,
+            height: 22,
+            backgroundColor: 'var(--cn-text-1)',
+            maskImage: addStepIconMask,
+            WebkitMaskImage: addStepIconMask,
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+        <Text variant="body-single-line-strong" color="foreground-1" className="min-w-0 flex-1" truncate>
+          Add step
+        </Text>
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
+          aria-label="More"
+          tooltipProps={{ content: 'More' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <IconV2 name="more-horizontal" />
+        </Button>
+      </div>
+    </button>
   )
 }
 
@@ -56,7 +98,7 @@ const nodes: NodeContent[] = [
 // Empty pipeline: start → "Add step" card → end
 const data: AnyContainerNodeType[] = [
   { type: ChaosNodeType.Start, data: {}, config: { width: 40, height: 40, hideLeftPort: true } },
-  { type: ChaosNodeType.AddStep, data: {}, config: { width: 200, height: 80 } },
+  { type: ChaosNodeType.AddStep, data: {}, config: { width: 220, height: 160 } },
   { type: ChaosNodeType.End, data: {}, config: { width: 40, height: 40, hideRightPort: true } }
 ]
 
