@@ -11,7 +11,8 @@ const MAX_SECONDS = 30 // how far the axis extends
 const TRAILING_PAD = 24
 const TOTAL_WIDTH = AXIS_START + MAX_SECONDS * PX_PER_SECOND + TRAILING_PAD
 const MIN_NODE_WIDTH = 8 // initial sliver before a node has visibly expanded
-const LANE_HEIGHT = 140
+// Sized so the centered node block leaves an ~8px gap to the lane's top/bottom borders.
+const LANE_HEIGHT = 122
 
 /** Total run length: the longest path — probe (5s) == fault chain (3s + 2s). */
 export const RUN_DURATION_SECONDS = 5
