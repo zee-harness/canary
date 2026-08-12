@@ -9,7 +9,7 @@ import {
   PipelineGraph
 } from '@harnessio/pipeline-graph'
 import { Button, IconV2, Select, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
-import { PipelineNodes, VisualYamlToggle, type VisualYamlValue } from '@harnessio/views'
+import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 
 // The pipeline-graph ships its own stylesheet for the canvas / edges / nodes.
 import '@harnessio/pipeline-graph/dist/index.css'
@@ -56,6 +56,57 @@ const data: AnyContainerNodeType[] = [
 ]
 
 const branchOptions = [{ value: 'main', label: 'main' }]
+
+const VIEW_OPTIONS = [
+  { value: 'visual', label: 'Visual' },
+  { value: 'yaml', label: 'YAML' }
+] as const
+
+/**
+ * Segmented Visual/YAML toggle: a bordered track with the selected option shown as a
+ * bordered pill with a brand-blue label. (The DS ToggleGroup only offers filled selected
+ * states, so this is built from tokens to match the design.)
+ */
+const VisualYamlSegmented = ({
+  view,
+  setView
+}: {
+  view: VisualYamlValue
+  setView: (view: VisualYamlValue) => void
+}) => (
+  <div
+    className="inline-flex items-center"
+    style={{
+      gap: 2,
+      padding: 3,
+      borderRadius: 8,
+      border: '1px solid var(--cn-border-1)',
+      backgroundColor: 'var(--cn-bg-2)'
+    }}
+  >
+    {VIEW_OPTIONS.map(({ value, label }) => {
+      const selected = view === value
+      return (
+        <button
+          key={value}
+          type="button"
+          className="cursor-pointer"
+          onClick={() => setView(value)}
+          style={{
+            padding: '4px 14px',
+            borderRadius: 6,
+            border: `1px solid ${selected ? 'var(--cn-border-3)' : 'transparent'}`,
+            backgroundColor: selected ? 'var(--cn-bg-3)' : 'transparent'
+          }}
+        >
+          <Text variant="body-single-line-strong" color={selected ? 'brand' : 'foreground-3'}>
+            {label}
+          </Text>
+        </button>
+      )
+    })}
+  </div>
+)
 
 export const ChaosStudioView = () => {
   const [activeTab, setActiveTab] = useState('studio')
@@ -105,7 +156,7 @@ export const ChaosStudioView = () => {
           {/* Toolbar */}
           <div className="flex shrink-0 items-center" style={{ paddingLeft: 24, paddingRight: 24, height: 48 }}>
             <div className="flex-1" />
-          <VisualYamlToggle view={view} setView={setView} isYamlValid />
+          <VisualYamlSegmented view={view} setView={setView} />
           <div className="flex flex-1 items-center justify-end">
             <Button variant="ghost" size="sm" iconOnly aria-label="Settings" tooltipProps={{ content: 'Settings' }}>
               <IconV2 name="settings" />
