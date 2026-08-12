@@ -80,7 +80,6 @@ const VisualYamlSegmented = ({
       gap: 2,
       padding: 3,
       borderRadius: 8,
-      border: '1px solid var(--cn-border-1)',
       backgroundColor: 'var(--cn-bg-2)'
     }}
   >
