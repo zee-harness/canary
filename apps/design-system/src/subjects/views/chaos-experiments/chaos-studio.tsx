@@ -1,22 +1,44 @@
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 
 import { AnyContainerNodeType, CanvasProvider, ContainerNode, NodeContent, PipelineGraph } from '@harnessio/pipeline-graph'
-import { Button, IconV2, Select, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
+import { Button, Drawer, IconV2, type IconV2NamesType, Select, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 
 // The pipeline-graph ships its own stylesheet for the canvas / edges / nodes.
 import '@harnessio/pipeline-graph/dist/index.css'
 
+// Lets the graph's Add-step card reflect (selected) and trigger the drawer owned by the view.
+const AddStepContext = createContext<{ selected: boolean; onOpen: () => void }>({
+  selected: false,
+  onOpen: () => undefined
+})
+
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
 const StartNodeComponent = () => <PipelineNodes.StartNode />
 const EndNodeComponent = () => <PipelineNodes.EndNode />
 
-/**
- * The empty-pipeline placeholder: a circular "+" add node — the same affordance the real
- * pipeline studio shows when a pipeline has no steps yet (not a populated step card).
- */
+/** The empty-step placeholder card; shows a brand-blue selected border while its drawer is open. */
 function AddStepNodeComponent() {
-  return <PipelineNodes.AddNode onClick={() => undefined} />
+  const { selected, onOpen } = useContext(AddStepContext)
+  return (
+    <div
+      className="size-full"
+      style={{
+        borderRadius: 8,
+        // StepNode's own selected state is only a gray border; overlay a brand outline to match the design.
+        outline: selected ? '1px solid var(--cn-border-brand)' : undefined,
+        outlineOffset: -1
+      }}
+    >
+      <PipelineNodes.StepNode
+        name="Add step"
+        icon={<IconV2 name="plus" size="lg" className="m-cn-xs text-cn-2" />}
+        selected={selected}
+        onClick={onOpen}
+        onEllipsisClick={() => undefined}
+      />
+    </div>
+  )
 }
 
 enum ChaosNodeType {
@@ -31,10 +53,10 @@ const nodes: NodeContent[] = [
   { type: ChaosNodeType.End, containerType: ContainerNode.leaf, component: EndNodeComponent }
 ]
 
-// Empty pipeline: start → circular add node → end
+// Empty pipeline: start → "Add step" card → end
 const data: AnyContainerNodeType[] = [
   { type: ChaosNodeType.Start, data: {}, config: { width: 40, height: 40, hideLeftPort: true } },
-  { type: ChaosNodeType.AddStep, data: {}, config: { width: 40, height: 40 } },
+  { type: ChaosNodeType.AddStep, data: {}, config: { width: 200, height: 80 } },
   { type: ChaosNodeType.End, data: {}, config: { width: 40, height: 40, hideRightPort: true } }
 ]
 
@@ -90,11 +112,103 @@ const VisualYamlSegmented = ({
   </div>
 )
 
+interface StepOption {
+  icon: IconV2NamesType
+  title: string
+  description: string
+}
+
+const GROUP_OPTIONS: StepOption[] = [
+  { icon: 'view-columns-2', title: 'Parallel', description: 'Runs multiple steps simultaneously to save time.' }
+]
+
+const STEP_OPTIONS: StepOption[] = [
+  {
+    icon: 'chaos-fault',
+    title: 'Fault',
+    description: 'A failure injected into the chaos infrastructure as part of a Chaos experiment.'
+  },
+  {
+    icon: 'rt-probe',
+    title: 'Probe',
+    description: 'A validation mechanism that continuously monitors and verifies the health and behavior of your system.'
+  },
+  { icon: 'code', title: 'Action', description: 'An event or script within a pipeline.' }
+]
+
+const AddStepCard = ({ icon, title, description }: StepOption) => (
+  <button
+    type="button"
+    className="border-cn-2 bg-cn-2 hover:bg-cn-3 flex w-full items-start rounded-cn-3 border text-left transition-colors"
+    style={{ gap: 12, padding: 16 }}
+  >
+    <div
+      className="border-cn-2 flex shrink-0 items-center justify-center rounded-cn-2 border"
+      style={{ width: 32, height: 32 }}
+    >
+      <IconV2 name={icon} size="sm" className="text-cn-2" />
+    </div>
+    <div className="flex flex-col" style={{ gap: 2 }}>
+      <Text variant="body-single-line-strong" color="foreground-1">
+        {title}
+      </Text>
+      <Text variant="caption-normal" color="foreground-3">
+        {description}
+      </Text>
+    </div>
+  </button>
+)
+
+const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
+  <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+    <Drawer.Content size="sm">
+      <Drawer.Header>
+        <Drawer.Title>Add Step</Drawer.Title>
+        <Drawer.Description className="sr-only">Choose a step type to add to the experiment.</Drawer.Description>
+      </Drawer.Header>
+
+      <Drawer.Body>
+        <div className="flex flex-col" style={{ gap: 24 }}>
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            <Text variant="body-single-line-normal" color="foreground-3">
+              Group
+            </Text>
+            <div className="flex flex-col" style={{ gap: 8 }}>
+              {GROUP_OPTIONS.map(option => (
+                <AddStepCard key={option.title} {...option} />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col" style={{ gap: 12 }}>
+            <Text variant="body-single-line-normal" color="foreground-3">
+              Steps
+            </Text>
+            <div className="flex flex-col" style={{ gap: 8 }}>
+              {STEP_OPTIONS.map(option => (
+                <AddStepCard key={option.title} {...option} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </Drawer.Body>
+
+      <Drawer.Footer>
+        <Button variant="secondary" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+)
+
 export const ChaosStudioView = () => {
   const [activeTab, setActiveTab] = useState('studio')
   const [view, setView] = useState<VisualYamlValue>('visual')
+  const [addStepOpen, setAddStepOpen] = useState(false)
 
   return (
+    <AddStepContext.Provider value={{ selected: addStepOpen, onOpen: () => setAddStepOpen(true) }}>
     <div className="flex h-full flex-col">
       {/* Page header: title + tabs + run */}
       <div
@@ -202,6 +316,9 @@ export const ChaosStudioView = () => {
         </div>
       </div>
     </div>
+
+      <AddStepDrawer open={addStepOpen} onOpenChange={setAddStepOpen} />
+    </AddStepContext.Provider>
   )
 }
 
