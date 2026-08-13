@@ -236,7 +236,7 @@ export const TimelineCanvas = memo(function TimelineCanvas({
 
         {/* Lane 1 — fault chain */}
         <Lane>
-          <div className="flex items-start" style={{ gap: 8 }}>
+          <div className="flex items-start" style={{ gap: 2 }}>
             <AnimatedNode
               key={`fault1-${runId}`}
               duration={3000}
@@ -267,7 +267,7 @@ export const TimelineCanvas = memo(function TimelineCanvas({
             title="system-inline-probe"
             footerLabel="Probe"
             finalStatus="completed"
-            icon={<FaultIcon />}
+            icon={<ProbeIcon />}
             onComplete={handleProbeComplete}
           />
         </Lane>
