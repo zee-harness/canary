@@ -65,7 +65,7 @@ export const ExperimentExecutionView = () => {
                 { title: 'Delete', iconName: 'trash', isDanger: true }
               ]}
             />
-            <Button variant="outline" theme="danger" size="sm">
+            <Button variant="secondary" size="sm">
               <IconV2 name="stop-solid" />
               Abort
             </Button>
