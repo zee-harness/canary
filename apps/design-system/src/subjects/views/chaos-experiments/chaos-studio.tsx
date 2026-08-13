@@ -7,11 +7,6 @@ import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 // The pipeline-graph ships its own stylesheet for the canvas / edges / nodes.
 import '@harnessio/pipeline-graph/dist/index.css'
 
-// Smiley placeholder glyph exported from the design (no DS icon matches). Inlined as a
-// data-URI mask so it can be tinted with a theme token and avoids SVG-asset resolution quirks.
-import addStepIconRaw from './add-step-icon.svg?raw'
-
-const addStepIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepIconRaw)}")`
 
 // Lets the graph's Add-step card reflect (selected) and trigger the drawer owned by the view.
 const AddStepContext = createContext<{ selected: boolean; onOpen: () => void }>({
@@ -48,23 +43,7 @@ function AddStepNodeComponent() {
         className="flex items-center"
         style={{ gap: 6, minHeight: 44, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
       >
-        <span
-          aria-hidden
-          className="shrink-0"
-          style={{
-            width: 22,
-            height: 22,
-            backgroundColor: 'var(--cn-text-1)',
-            maskImage: addStepIconMask,
-            WebkitMaskImage: addStepIconMask,
-            maskSize: 'contain',
-            WebkitMaskSize: 'contain',
-            maskRepeat: 'no-repeat',
-            WebkitMaskRepeat: 'no-repeat',
-            maskPosition: 'center',
-            WebkitMaskPosition: 'center'
-          }}
-        />
+        <IconV2 name="chaos-fault" size="lg" className="text-cn-1 shrink-0" />
         <Text variant="body-single-line-strong" color="foreground-1" className="min-w-0 flex-1" truncate>
           Add step
         </Text>
