@@ -236,7 +236,7 @@ export const TimelineCanvas = memo(function TimelineCanvas({
 
         {/* Lane 1 — fault chain */}
         <Lane>
-          <div className="flex items-start" style={{ gap: 1 }}>
+          <div className="flex items-start" style={{ gap: 8 }}>
             <AnimatedNode
               key={`fault1-${runId}`}
               duration={3000}

@@ -43,7 +43,7 @@ function AddStepNodeComponent() {
         className="flex items-center"
         style={{ gap: 6, minHeight: 44, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
       >
-        <IconV2 name="rt-probe" size="lg" className="text-cn-1 shrink-0" />
+        <IconV2 name="chaos-fault" size="lg" className="text-cn-1 shrink-0" />
         <Text variant="body-single-line-strong" color="foreground-1" className="min-w-0 flex-1" truncate>
           Add step
         </Text>
