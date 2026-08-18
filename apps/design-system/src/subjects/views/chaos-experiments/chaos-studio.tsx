@@ -2,15 +2,18 @@ import { createContext, useContext, useState } from 'react'
 
 import { AnyContainerNodeType, CanvasProvider, ContainerNode, NodeContent, PipelineGraph } from '@harnessio/pipeline-graph'
 import {
+  Accordion,
   Button,
   Drawer,
   IconV2,
   type IconV2NamesType,
+  NumberInput,
   SearchInput,
   Select,
   StatusBadge,
   Tabs,
-  Text
+  Text,
+  TextInput
 } from '@harnessio/ui/components'
 import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 
@@ -287,9 +290,10 @@ const CategoryItem = ({
   </button>
 )
 
-const AddStepCard = ({ icon, iconMask, title, description }: StepItem) => (
+const AddStepCard = ({ icon, iconMask, title, description, onClick }: StepItem & { onClick?: () => void }) => (
   <button
     type="button"
+    onClick={onClick}
     className="hover:bg-cn-2 flex w-full items-start rounded-cn-3 text-left transition-colors"
     style={{ gap: 12, padding: 16, border: '1px solid var(--cn-border-2)' }}
   >
@@ -330,9 +334,99 @@ const AddStepCard = ({ icon, iconMask, title, description }: StepItem) => (
   </button>
 )
 
+/**
+ * Nested configuration drawer for the "Pod Delete" step — stacks on top of the Add Step
+ * drawer (DrawerRoot auto-nests when rendered inside an open parent drawer).
+ */
+const PodDeleteStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
+  <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+    <Drawer.Content size="sm">
+      <Drawer.Header>
+        <Drawer.Title>Add step: Pod Delete</Drawer.Title>
+        <Drawer.Description>Simulates pod failure of random replicas of an application deployment.</Drawer.Description>
+      </Drawer.Header>
+
+      <Drawer.Body>
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          <TextInput
+            label="Name"
+            defaultValue="pod-delete-538a"
+            suffix={
+              <span
+                className="inline-flex items-center"
+                style={{ gap: 4, height: 24, padding: '0 9px', borderRadius: 6, border: '1px solid var(--cn-border-2)' }}
+              >
+                <IconV2 name="sparks" size="xs" className="text-cn-2" />
+                <Text variant="caption-single-line-normal" color="foreground-2">
+                  suggested
+                </Text>
+              </span>
+            }
+          />
+
+          <TextInput label="Namespace" placeholder="e.g. default" />
+
+          <NumberInput
+            label="Duration (in seconds)"
+            tooltipContent="How long the fault is injected."
+            defaultValue={30}
+            prefix={
+              <span style={{ display: 'inline-flex', color: 'var(--cn-set-blue-outline-text, #5eb8ff)' }}>
+                <IconV2 name="code-brackets" size="sm" />
+              </span>
+            }
+          />
+
+          <NumberInput
+            label="Interval (in seconds)"
+            tooltipContent="Time between successive fault iterations."
+            defaultValue={10}
+            prefix={
+              <span style={{ display: 'inline-flex', color: 'var(--cn-set-blue-outline-text, #5eb8ff)' }}>
+                <IconV2 name="code-brackets" size="sm" />
+              </span>
+            }
+          />
+
+          <Accordion.Root type="multiple" variant="card">
+            <Accordion.Item value="optional">
+              <Accordion.Trigger>Optional configuration</Accordion.Trigger>
+              <Accordion.Content>
+                <Text variant="body-normal" color="foreground-3">
+                  No optional configuration.
+                </Text>
+              </Accordion.Content>
+            </Accordion.Item>
+            <Accordion.Item value="advanced">
+              <Accordion.Trigger>Advanced</Accordion.Trigger>
+              <Accordion.Content>
+                <Text variant="body-normal" color="foreground-3">
+                  No advanced settings.
+                </Text>
+              </Accordion.Content>
+            </Accordion.Item>
+          </Accordion.Root>
+        </div>
+      </Drawer.Body>
+
+      <Drawer.Footer>
+        <div className="flex w-full items-center justify-between">
+          <Button variant="secondary" size="sm" iconOnly aria-label="Delete step" tooltipProps={{ content: 'Delete' }}>
+            <IconV2 name="trash" />
+          </Button>
+          <Button size="sm" onClick={() => onOpenChange(false)}>
+            Add step
+          </Button>
+        </div>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+)
+
 const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
+  const [podDeleteOpen, setPodDeleteOpen] = useState(false)
   const steps = STEP_ITEMS.filter(
     step =>
       (activeCategory === 'all' || step.category === activeCategory) &&
@@ -369,13 +463,20 @@ const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (o
               <SearchInput placeholder="Find steps" onChange={setSearch} />
               <div className="flex flex-col" style={{ gap: 12 }}>
                 {steps.map(step => (
-                  <AddStepCard key={step.title} {...step} />
+                  <AddStepCard
+                    key={step.title}
+                    {...step}
+                    onClick={step.title === 'Pod Delete' ? () => setPodDeleteOpen(true) : undefined}
+                  />
                 ))}
               </div>
             </div>
           </div>
         </Drawer.Body>
       </Drawer.Content>
+
+      {/* Nested step-config drawer, opened from the Pod Delete card. */}
+      <PodDeleteStepDrawer open={podDeleteOpen} onOpenChange={setPodDeleteOpen} />
     </Drawer.Root>
   )
 }
