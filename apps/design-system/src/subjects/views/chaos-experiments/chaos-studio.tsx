@@ -1,6 +1,13 @@
 import { createContext, useContext, useState } from 'react'
 
-import { AnyContainerNodeType, CanvasProvider, ContainerNode, NodeContent, PipelineGraph } from '@harnessio/pipeline-graph'
+import {
+  AnyContainerNodeType,
+  CanvasProvider,
+  ContainerNode,
+  LeafNodeInternalType,
+  NodeContent,
+  PipelineGraph
+} from '@harnessio/pipeline-graph'
 import {
   Accordion,
   Button,
@@ -82,23 +89,117 @@ function AddStepNodeComponent() {
   )
 }
 
+/** Populated step card shown after a step is added (header + footer with its params). */
+interface PodDeleteNodeData {
+  name: string
+  duration: number
+  interval: number
+}
+
+function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDeleteNodeData> }) {
+  const { name, duration, interval } = node.data
+  return (
+    <div
+      className="size-full overflow-hidden"
+      style={{
+        borderRadius: 8,
+        border: '1px solid var(--cn-border-2)',
+        backgroundColor: 'var(--cn-bg-3)',
+        boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.35)'
+      }}
+    >
+      {/* header: icon chip + name + more */}
+      <div
+        className="flex items-center"
+        style={{ gap: 6, minHeight: 44, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
+      >
+        <div
+          className="flex shrink-0 items-center justify-center"
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 4,
+            border: '1px solid var(--cn-border-2)',
+            backgroundColor: 'var(--cn-text-1)',
+            color: 'var(--cn-bg-1)'
+          }}
+        >
+          <IconV2 name="chaos-fault" size="sm" />
+        </div>
+        <Text variant="body-single-line-strong" color="foreground-1" className="min-w-0 flex-1" truncate>
+          {name}
+        </Text>
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
+          aria-label="More"
+          tooltipProps={{ content: 'More' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <IconV2 name="more-horizontal" />
+        </Button>
+      </div>
+
+      {/* footer: step params */}
+      <div
+        className="border-cn-2 border-t"
+        style={{ backgroundColor: 'var(--cn-comp-pipeline-card-footer, var(--cn-bg-2))', padding: '12px 16px' }}
+      >
+        <div className="flex flex-col" style={{ gap: 6 }}>
+          <Text as="p" variant="caption-normal" color="foreground-3">
+            Duration: {duration}s
+          </Text>
+          <Text as="p" variant="caption-normal" color="foreground-3">
+            Interval: {interval}s
+          </Text>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 enum ChaosNodeType {
   Start = 'start',
   AddStep = 'add-step',
+  PodDelete = 'pod-delete',
   End = 'end'
 }
 
 const nodes: NodeContent[] = [
   { type: ChaosNodeType.Start, containerType: ContainerNode.leaf, component: StartNodeComponent },
   { type: ChaosNodeType.AddStep, containerType: ContainerNode.leaf, component: AddStepNodeComponent },
+  { type: ChaosNodeType.PodDelete, containerType: ContainerNode.leaf, component: PodDeleteStepContentNode },
   { type: ChaosNodeType.End, containerType: ContainerNode.leaf, component: EndNodeComponent }
 ]
 
+const START_NODE: AnyContainerNodeType = {
+  type: ChaosNodeType.Start,
+  data: {},
+  config: { width: 40, height: 40, hideLeftPort: true }
+}
+const END_NODE: AnyContainerNodeType = {
+  type: ChaosNodeType.End,
+  data: {},
+  config: { width: 40, height: 40, hideRightPort: true }
+}
+
 // Empty pipeline: start → "Add step" card → end
-const data: AnyContainerNodeType[] = [
-  { type: ChaosNodeType.Start, data: {}, config: { width: 40, height: 40, hideLeftPort: true } },
+const EMPTY_DATA: AnyContainerNodeType[] = [
+  START_NODE,
   { type: ChaosNodeType.AddStep, data: {}, config: { width: 220, height: 160 } },
-  { type: ChaosNodeType.End, data: {}, config: { width: 40, height: 40, hideRightPort: true } }
+  END_NODE
+]
+
+// After adding the Pod Delete step: start → populated step card → end
+const STEP_ADDED_DATA: AnyContainerNodeType[] = [
+  START_NODE,
+  {
+    type: ChaosNodeType.PodDelete,
+    data: { name: 'pod-delete-538a', duration: 30, interval: 10 },
+    config: { width: 220, height: 160 }
+  },
+  END_NODE
 ]
 
 const branchOptions = [{ value: 'main', label: 'main' }]
@@ -338,7 +439,15 @@ const AddStepCard = ({ icon, iconMask, title, description, onClick }: StepItem &
  * Nested configuration drawer for the "Pod Delete" step — stacks on top of the Add Step
  * drawer (DrawerRoot auto-nests when rendered inside an open parent drawer).
  */
-const PodDeleteStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
+const PodDeleteStepDrawer = ({
+  open,
+  onOpenChange,
+  onAddStep
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAddStep: () => void
+}) => (
   <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
     <Drawer.Content size="sm">
       <Drawer.Header>
@@ -400,7 +509,7 @@ const PodDeleteStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChan
           <Button variant="secondary" size="sm" iconOnly aria-label="Delete step" tooltipProps={{ content: 'Delete' }}>
             <IconV2 name="trash" />
           </Button>
-          <Button size="sm" onClick={() => onOpenChange(false)}>
+          <Button size="sm" onClick={onAddStep}>
             Add step
           </Button>
         </div>
@@ -409,7 +518,15 @@ const PodDeleteStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChan
   </Drawer.Root>
 )
 
-const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
+const AddStepDrawer = ({
+  open,
+  onOpenChange,
+  onAddStep
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAddStep: () => void
+}) => {
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [podDeleteOpen, setPodDeleteOpen] = useState(false)
@@ -462,7 +579,14 @@ const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (o
       </Drawer.Content>
 
       {/* Nested step-config drawer, opened from the Pod Delete card. */}
-      <PodDeleteStepDrawer open={podDeleteOpen} onOpenChange={setPodDeleteOpen} />
+      <PodDeleteStepDrawer
+        open={podDeleteOpen}
+        onOpenChange={setPodDeleteOpen}
+        onAddStep={() => {
+          setPodDeleteOpen(false)
+          onAddStep()
+        }}
+      />
     </Drawer.Root>
   )
 }
@@ -471,6 +595,8 @@ export const ChaosStudioView = () => {
   const [activeTab, setActiveTab] = useState('studio')
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
+  const [stepAdded, setStepAdded] = useState(false)
+  const graphData = stepAdded ? STEP_ADDED_DATA : EMPTY_DATA
 
   return (
     <AddStepContext.Provider value={{ selected: addStepOpen, onOpen: () => setAddStepOpen(true) }}>
@@ -529,7 +655,7 @@ export const ChaosStudioView = () => {
           <div className="relative flex min-h-0 flex-1">
           <CanvasProvider>
             <PipelineGraph
-              data={data}
+              data={graphData}
               nodes={nodes}
               customCreateSVGPath={({ id, path }) => ({
                 level1: `<path d="${path}" id="${id}" fill="none" stroke="var(--cn-border-1)" />`,
@@ -582,7 +708,14 @@ export const ChaosStudioView = () => {
       </div>
     </div>
 
-      <AddStepDrawer open={addStepOpen} onOpenChange={setAddStepOpen} />
+      <AddStepDrawer
+        open={addStepOpen}
+        onOpenChange={setAddStepOpen}
+        onAddStep={() => {
+          setStepAdded(true)
+          setAddStepOpen(false)
+        }}
+      />
     </AddStepContext.Provider>
   )
 }
