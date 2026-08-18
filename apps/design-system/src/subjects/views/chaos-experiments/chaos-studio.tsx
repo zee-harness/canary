@@ -17,6 +17,13 @@ import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 // The pipeline-graph ships its own stylesheet for the canvas / edges / nodes.
 import '@harnessio/pipeline-graph/dist/index.css'
 
+// Group/Parallel glyphs exported from the design (no DS icon matches); inlined as data-URI masks.
+import addStepGroupRaw from './add-step-group.svg?raw'
+import addStepParallelRaw from './add-step-parallel.svg?raw'
+
+const groupIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepGroupRaw)}")`
+const parallelIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepParallelRaw)}")`
+
 
 // Lets the graph's Add-step card reflect (selected) and trigger the drawer owned by the view.
 const AddStepContext = createContext<{ selected: boolean; onOpen: () => void }>({
@@ -144,9 +151,12 @@ const VisualYamlSegmented = ({
 )
 
 interface StepItem {
-  icon: IconV2NamesType
+  icon?: IconV2NamesType
+  /** Data-URI mask for glyphs that have no DS icon (Group / Parallel). */
+  iconMask?: string
   title: string
   description: string
+  category: 'group' | 'faults' | 'probes' | 'actions'
 }
 
 interface StepCategory {
@@ -164,35 +174,50 @@ const STEP_CATEGORIES: StepCategory[] = [
 ]
 
 const STEP_ITEMS: StepItem[] = [
-  { icon: 'view-grid', title: 'Group', description: 'Container for organizing steps that run sequentially.' },
-  { icon: 'view-columns-2', title: 'Parallel', description: 'Runs multiple steps simultaneously to save time.' },
+  {
+    iconMask: groupIconMask,
+    title: 'Group',
+    description: 'Container for organizing steps that run sequentially.',
+    category: 'group'
+  },
+  {
+    iconMask: parallelIconMask,
+    title: 'Parallel',
+    description: 'Runs multiple steps simultaneously to save time.',
+    category: 'group'
+  },
   {
     icon: 'chaos-fault',
     title: 'Pod Delete',
-    description: 'Randomly terminates a pod to test how the system handles sudden pod loss and recovery.'
+    description: 'Randomly terminates a pod to test how the system handles sudden pod loss and recovery.',
+    category: 'faults'
   },
   {
     icon: 'chaos-fault',
     title: 'Pod CPU Hog',
-    description: 'Consumes excess CPU within a pod to test behavior under resource contention and throttling.'
+    description: 'Consumes excess CPU within a pod to test behavior under resource contention and throttling.',
+    category: 'faults'
   },
   {
     icon: 'chaos-fault',
     title: 'EC2 CPU Hog',
-    description: 'Spikes CPU usage on an EC2 instance to test performance under compute resource exhaustion.'
+    description: 'Spikes CPU usage on an EC2 instance to test performance under compute resource exhaustion.',
+    category: 'faults'
   },
   {
     icon: 'chaos-fault',
     title: 'EC2 DNS Chaos',
-    description: 'Disrupts or delays DNS resolution on an EC2 instance to test resilience to name resolution failures.'
+    description: 'Disrupts or delays DNS resolution on an EC2 instance to test resilience to name resolution failures.',
+    category: 'faults'
   },
   {
     icon: 'chaos-fault',
     title: 'Pod API Latency',
-    description: 'Injects artificial delay into API responses from a pod to test timeout handling and downstream resilience.'
+    description: 'Injects artificial delay into API responses from a pod to test timeout handling and downstream resilience.',
+    category: 'faults'
   },
-  { icon: 'rt-probe', title: 'System Inline Probe', description: 'Command Probe' },
-  { icon: 'rt-probe', title: 'Runtime HTTP Probe', description: 'HTTP Probe' }
+  { icon: 'rt-probe', title: 'System Inline Probe', description: 'Command Probe', category: 'probes' },
+  { icon: 'rt-probe', title: 'Runtime HTTP Probe', description: 'HTTP Probe', category: 'probes' }
 ]
 
 /** A category row in the drawer's left sidebar: icon + label + count, with a selected treatment. */
@@ -262,7 +287,7 @@ const CategoryItem = ({
   </button>
 )
 
-const AddStepCard = ({ icon, title, description }: StepItem) => (
+const AddStepCard = ({ icon, iconMask, title, description }: StepItem) => (
   <button
     type="button"
     className="hover:bg-cn-2 flex w-full items-start rounded-cn-3 text-left transition-colors"
@@ -273,7 +298,26 @@ const AddStepCard = ({ icon, title, description }: StepItem) => (
       className="flex shrink-0 items-center justify-center rounded-cn-2"
       style={{ width: 36, height: 36, backgroundColor: 'var(--cn-text-1)', color: 'var(--cn-bg-1)' }}
     >
-      <IconV2 name={icon} size="lg" />
+      {iconMask ? (
+        <span
+          aria-hidden
+          style={{
+            width: 22,
+            height: 22,
+            backgroundColor: 'var(--cn-bg-1)',
+            maskImage: iconMask,
+            WebkitMaskImage: iconMask,
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      ) : (
+        icon && <IconV2 name={icon} size="lg" />
+      )}
     </div>
     <div className="flex flex-col" style={{ gap: 2 }}>
       <Text variant="body-single-line-strong" color="foreground-1">
@@ -289,12 +333,16 @@ const AddStepCard = ({ icon, title, description }: StepItem) => (
 const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
-  const steps = STEP_ITEMS.filter(step => step.title.toLowerCase().includes(search.toLowerCase()))
+  const steps = STEP_ITEMS.filter(
+    step =>
+      (activeCategory === 'all' || step.category === activeCategory) &&
+      step.title.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
       <Drawer.Content size="md">
-        <Drawer.Header>
+        <Drawer.Header style={{ borderBottom: '1px solid var(--cn-border-2)' }}>
           <Drawer.Title>Add step</Drawer.Title>
           <Drawer.Description className="sr-only">Choose a step to add to the experiment.</Drawer.Description>
         </Drawer.Header>
