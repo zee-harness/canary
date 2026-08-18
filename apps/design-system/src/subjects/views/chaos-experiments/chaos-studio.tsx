@@ -1,7 +1,17 @@
 import { createContext, useContext, useState } from 'react'
 
 import { AnyContainerNodeType, CanvasProvider, ContainerNode, NodeContent, PipelineGraph } from '@harnessio/pipeline-graph'
-import { Button, Drawer, IconV2, type IconV2NamesType, Select, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
+import {
+  Button,
+  Drawer,
+  IconV2,
+  type IconV2NamesType,
+  SearchInput,
+  Select,
+  StatusBadge,
+  Tabs,
+  Text
+} from '@harnessio/ui/components'
 import { PipelineNodes, type VisualYamlValue } from '@harnessio/views'
 
 // The pipeline-graph ships its own stylesheet for the canvas / edges / nodes.
@@ -133,31 +143,126 @@ const VisualYamlSegmented = ({
   </div>
 )
 
-interface StepOption {
+interface StepItem {
   icon: IconV2NamesType
   title: string
   description: string
 }
 
-const GROUP_OPTIONS: StepOption[] = [
-  { icon: 'view-columns-2', title: 'Parallel', description: 'Runs multiple steps simultaneously to save time.' }
+interface StepCategory {
+  key: string
+  label: string
+  icon: IconV2NamesType
+  count: number
+}
+
+const STEP_CATEGORIES: StepCategory[] = [
+  { key: 'all', label: 'All', icon: 'list', count: 22 },
+  { key: 'faults', label: 'Faults', icon: 'chaos-fault', count: 10 },
+  { key: 'probes', label: 'Probes', icon: 'rt-probe', count: 7 },
+  { key: 'actions', label: 'Actions', icon: 'calendar', count: 5 }
 ]
 
-const STEP_OPTIONS: StepOption[] = [
+const STEP_ITEMS: StepItem[] = [
+  { icon: 'view-grid', title: 'Group', description: 'Container for organizing steps that run sequentially.' },
+  { icon: 'view-columns-2', title: 'Parallel', description: 'Runs multiple steps simultaneously to save time.' },
   {
     icon: 'chaos-fault',
-    title: 'Fault',
-    description: 'A failure injected into the chaos infrastructure as part of a Chaos experiment.'
+    title: 'Pod Delete',
+    description: 'Randomly terminates a pod to test how the system handles sudden pod loss and recovery.'
   },
   {
-    icon: 'rt-probe',
-    title: 'Probe',
-    description: 'A validation mechanism that continuously monitors and verifies the health and behavior of your system.'
+    icon: 'chaos-fault',
+    title: 'Pod CPU Hog',
+    description: 'Consumes excess CPU within a pod to test behavior under resource contention and throttling.'
   },
-  { icon: 'calendar', title: 'Action', description: 'An event or script within a pipeline.' }
+  {
+    icon: 'chaos-fault',
+    title: 'EC2 CPU Hog',
+    description: 'Spikes CPU usage on an EC2 instance to test performance under compute resource exhaustion.'
+  },
+  {
+    icon: 'chaos-fault',
+    title: 'EC2 DNS Chaos',
+    description: 'Disrupts or delays DNS resolution on an EC2 instance to test resilience to name resolution failures.'
+  },
+  {
+    icon: 'chaos-fault',
+    title: 'Pod API Latency',
+    description: 'Injects artificial delay into API responses from a pod to test timeout handling and downstream resilience.'
+  },
+  { icon: 'rt-probe', title: 'System Inline Probe', description: 'Command Probe' },
+  { icon: 'rt-probe', title: 'Runtime HTTP Probe', description: 'HTTP Probe' }
 ]
 
-const AddStepCard = ({ icon, title, description }: StepOption) => (
+/** A category row in the drawer's left sidebar: icon + label + count, with a selected treatment. */
+const CategoryItem = ({
+  icon,
+  label,
+  count,
+  selected,
+  onClick
+}: StepCategory & { selected: boolean; onClick: () => void }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`relative flex items-center rounded-cn-2 transition-colors${selected ? '' : ' hover:bg-cn-2'}`}
+    style={{
+      gap: 14,
+      minHeight: 36,
+      paddingLeft: 14,
+      paddingRight: 8,
+      paddingTop: 2,
+      paddingBottom: 2,
+      width: 180,
+      ...(selected
+        ? { background: 'linear-gradient(112deg, rgba(119, 153, 255, 0.2) 13%, rgba(132, 136, 146, 0.09) 85%)' }
+        : {})
+    }}
+  >
+    {selected && (
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 2,
+          height: 12,
+          borderRadius: 1,
+          backgroundColor: 'var(--cn-set-brand-primary-bg)'
+        }}
+      />
+    )}
+    <IconV2 name={icon} size="sm" className={selected ? 'text-cn-1' : 'text-cn-2'} />
+    <span className="flex min-w-0 flex-1 items-center justify-between" style={{ gap: 8 }}>
+      <Text
+        variant={selected ? 'body-single-line-strong' : 'body-single-line-normal'}
+        color={selected ? 'foreground-1' : 'foreground-2'}
+      >
+        {label}
+      </Text>
+      <span
+        className="inline-flex shrink-0 items-center justify-center"
+        style={{
+          minWidth: 18,
+          height: 18,
+          padding: '0 5px',
+          borderRadius: 6,
+          border: '1px solid var(--cn-border-1)',
+          backgroundColor: 'var(--cn-bg-2)'
+        }}
+      >
+        <Text variant="caption-single-line-normal" color="foreground-2">
+          {count}
+        </Text>
+      </span>
+    </span>
+  </button>
+)
+
+const AddStepCard = ({ icon, title, description }: StepItem) => (
   <button
     type="button"
     className="hover:bg-cn-2 flex w-full items-start rounded-cn-3 text-left transition-colors"
@@ -181,48 +286,51 @@ const AddStepCard = ({ icon, title, description }: StepOption) => (
   </button>
 )
 
-const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
-  <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
-    <Drawer.Content size="sm">
-      <Drawer.Header>
-        <Drawer.Title>Add Step</Drawer.Title>
-        <Drawer.Description className="sr-only">Choose a step type to add to the experiment.</Drawer.Description>
-      </Drawer.Header>
+const AddStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
+  const [activeCategory, setActiveCategory] = useState('all')
+  const [search, setSearch] = useState('')
+  const steps = STEP_ITEMS.filter(step => step.title.toLowerCase().includes(search.toLowerCase()))
 
-      <Drawer.Body>
-        <div className="flex flex-col" style={{ gap: 24 }}>
-          <div className="flex flex-col" style={{ gap: 12 }}>
-            <Text variant="body-single-line-normal" color="foreground-3">
-              Group
-            </Text>
-            <div className="flex flex-col" style={{ gap: 8 }}>
-              {GROUP_OPTIONS.map(option => (
-                <AddStepCard key={option.title} {...option} />
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+      <Drawer.Content size="md">
+        <Drawer.Header>
+          <Drawer.Title>Add step</Drawer.Title>
+          <Drawer.Description className="sr-only">Choose a step to add to the experiment.</Drawer.Description>
+        </Drawer.Header>
+
+        <Drawer.Body>
+          <div className="flex h-full items-stretch" style={{ gap: 20 }}>
+            {/* Category sidebar */}
+            <div className="flex shrink-0 flex-col" style={{ gap: 2 }}>
+              {STEP_CATEGORIES.map(category => (
+                <CategoryItem
+                  key={category.key}
+                  {...category}
+                  selected={activeCategory === category.key}
+                  onClick={() => setActiveCategory(category.key)}
+                />
               ))}
             </div>
-          </div>
 
-          <div className="flex flex-col" style={{ gap: 12 }}>
-            <Text variant="body-single-line-normal" color="foreground-3">
-              Steps
-            </Text>
-            <div className="flex flex-col" style={{ gap: 8 }}>
-              {STEP_OPTIONS.map(option => (
-                <AddStepCard key={option.title} {...option} />
-              ))}
+            {/* Vertical separator */}
+            <div className="bg-cn-3 w-px shrink-0 self-stretch" />
+
+            {/* Searchable step list */}
+            <div className="flex min-w-0 flex-1 flex-col" style={{ gap: 12 }}>
+              <SearchInput placeholder="Find steps" onChange={setSearch} />
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                {steps.map(step => (
+                  <AddStepCard key={step.title} {...step} />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </Drawer.Body>
-
-      <Drawer.Footer>
-        <Button variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-      </Drawer.Footer>
-    </Drawer.Content>
-  </Drawer.Root>
-)
+        </Drawer.Body>
+      </Drawer.Content>
+    </Drawer.Root>
+  )
+}
 
 export const ChaosStudioView = () => {
   const [activeTab, setActiveTab] = useState('studio')
