@@ -663,14 +663,22 @@ export const ChaosStudioView = () => {
   const [addStepOpen, setAddStepOpen] = useState(false)
   const [stepAdded, setStepAdded] = useState(false)
   const [parallelAdded, setParallelAdded] = useState(false)
+  // Whether the drawer was opened via a node's "+" (adds a parallel step) vs the empty placeholder.
+  const [pendingParallel, setPendingParallel] = useState(false)
   const graphData = !stepAdded ? EMPTY_DATA : parallelAdded ? PARALLEL_DATA : STEP_ADDED_DATA
 
   return (
     <AddStepContext.Provider
       value={{
         selected: addStepOpen,
-        onOpen: () => setAddStepOpen(true),
-        onAddParallel: () => setParallelAdded(true)
+        onOpen: () => {
+          setPendingParallel(false)
+          setAddStepOpen(true)
+        },
+        onAddParallel: () => {
+          setPendingParallel(true)
+          setAddStepOpen(true)
+        }
       }}
     >
     <div className="flex h-full flex-col">
@@ -785,7 +793,9 @@ export const ChaosStudioView = () => {
         open={addStepOpen}
         onOpenChange={setAddStepOpen}
         onAddStep={() => {
-          setStepAdded(true)
+          if (pendingParallel) setParallelAdded(true)
+          else setStepAdded(true)
+          setPendingParallel(false)
           setAddStepOpen(false)
         }}
       />
