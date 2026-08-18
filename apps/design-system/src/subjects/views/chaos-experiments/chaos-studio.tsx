@@ -366,26 +366,12 @@ const PodDeleteStepDrawer = ({ open, onOpenChange }: { open: boolean; onOpenChan
 
           <TextInput label="Namespace" placeholder="e.g. default" />
 
-          <NumberInput
-            label="Duration (in seconds)"
-            tooltipContent="How long the fault is injected."
-            defaultValue={30}
-            prefix={
-              <span style={{ display: 'inline-flex', color: 'var(--cn-set-blue-outline-text, #5eb8ff)' }}>
-                <IconV2 name="code-brackets" size="sm" />
-              </span>
-            }
-          />
+          <NumberInput label="Duration (in seconds)" tooltipContent="How long the fault is injected." defaultValue={30} />
 
           <NumberInput
             label="Interval (in seconds)"
             tooltipContent="Time between successive fault iterations."
             defaultValue={10}
-            prefix={
-              <span style={{ display: 'inline-flex', color: 'var(--cn-set-blue-outline-text, #5eb8ff)' }}>
-                <IconV2 name="code-brackets" size="sm" />
-              </span>
-            }
           />
 
           <Accordion.Root type="multiple" variant="card">
