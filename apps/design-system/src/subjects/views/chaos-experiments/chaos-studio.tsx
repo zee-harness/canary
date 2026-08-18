@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, type ReactNode, useContext, useState } from 'react'
 
 import {
   AnyContainerNodeType,
@@ -35,10 +35,12 @@ const groupIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepGroup
 const parallelIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepParallelRaw)}")`
 
 
-// Lets the graph's Add-step card reflect (selected) and trigger the drawer owned by the view.
-const AddStepContext = createContext<{ selected: boolean; onOpen: () => void }>({
+// Lets graph nodes reflect/trigger view-owned state: opening the Add Step drawer and adding a
+// parallel node from a step's floating "+" button.
+const AddStepContext = createContext<{ selected: boolean; onOpen: () => void; onAddParallel: () => void }>({
   selected: false,
-  onOpen: () => undefined
+  onOpen: () => undefined,
+  onAddParallel: () => undefined
 })
 
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
@@ -98,16 +100,23 @@ interface PodDeleteNodeData {
 
 function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDeleteNodeData> }) {
   const { name, duration, interval } = node.data
+  const { onAddParallel } = useContext(AddStepContext)
+  const [hovered, setHovered] = useState(false)
   return (
     <div
-      className="size-full overflow-hidden"
-      style={{
-        borderRadius: 8,
-        border: '1px solid var(--cn-border-2)',
-        backgroundColor: 'var(--cn-bg-3)',
-        boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.35)'
-      }}
+      className="relative size-full"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
+      <div
+        className="size-full overflow-hidden"
+        style={{
+          borderRadius: 8,
+          border: '1px solid var(--cn-border-2)',
+          backgroundColor: 'var(--cn-bg-3)',
+          boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.35)'
+        }}
+      >
       {/* header: icon chip + name + more */}
       <div
         className="flex items-center"
@@ -156,6 +165,51 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
         </div>
       </div>
     </div>
+
+      {/* floating add-parallel button — appears on hover below the node */}
+      <div
+        className="flex flex-col items-center"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '100%',
+          transform: 'translateX(-50%)',
+          paddingTop: 10,
+          opacity: hovered ? 1 : 0,
+          pointerEvents: hovered ? 'auto' : 'none',
+          transition: 'opacity 150ms ease'
+        }}
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          iconOnly
+          rounded
+          aria-label="Add"
+          tooltipProps={{ content: 'Add', side: 'top' }}
+          onClick={event => {
+            event.stopPropagation()
+            onAddParallel()
+          }}
+        >
+          <IconV2 name="plus" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/** Minimal parallel container: a subtle bordered box wrapping its parallel child nodes. */
+function ParallelGroupContentNode({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{ borderRadius: 10, border: '1px solid var(--cn-border-2)', backgroundColor: 'var(--cn-bg-2)' }}
+      />
+      {children}
+    </>
   )
 }
 
@@ -163,6 +217,7 @@ enum ChaosNodeType {
   Start = 'start',
   AddStep = 'add-step',
   PodDelete = 'pod-delete',
+  Parallel = 'parallel',
   End = 'end'
 }
 
@@ -170,8 +225,15 @@ const nodes: NodeContent[] = [
   { type: ChaosNodeType.Start, containerType: ContainerNode.leaf, component: StartNodeComponent },
   { type: ChaosNodeType.AddStep, containerType: ContainerNode.leaf, component: AddStepNodeComponent },
   { type: ChaosNodeType.PodDelete, containerType: ContainerNode.leaf, component: PodDeleteStepContentNode },
+  { type: ChaosNodeType.Parallel, containerType: ContainerNode.parallel, component: ParallelGroupContentNode },
   { type: ChaosNodeType.End, containerType: ContainerNode.leaf, component: EndNodeComponent }
 ]
+
+const podDeleteNode = (name: string): AnyContainerNodeType => ({
+  type: ChaosNodeType.PodDelete,
+  data: { name, duration: 30, interval: 10 },
+  config: { width: 220, height: 160 }
+})
 
 const START_NODE: AnyContainerNodeType = {
   type: ChaosNodeType.Start,
@@ -192,12 +254,16 @@ const EMPTY_DATA: AnyContainerNodeType[] = [
 ]
 
 // After adding the Pod Delete step: start → populated step card → end
-const STEP_ADDED_DATA: AnyContainerNodeType[] = [
+const STEP_ADDED_DATA: AnyContainerNodeType[] = [START_NODE, podDeleteNode('pod-delete-538a'), END_NODE]
+
+// After adding a parallel node: the step sits in a parallel container beside a second node
+const PARALLEL_DATA: AnyContainerNodeType[] = [
   START_NODE,
   {
-    type: ChaosNodeType.PodDelete,
-    data: { name: 'pod-delete-538a', duration: 30, interval: 10 },
-    config: { width: 220, height: 160 }
+    type: ChaosNodeType.Parallel,
+    data: {},
+    config: { minWidth: 220, minHeight: 160 },
+    children: [podDeleteNode('pod-delete-538a'), podDeleteNode('pod-delete-6b2c')]
   },
   END_NODE
 ]
@@ -596,10 +662,17 @@ export const ChaosStudioView = () => {
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
   const [stepAdded, setStepAdded] = useState(false)
-  const graphData = stepAdded ? STEP_ADDED_DATA : EMPTY_DATA
+  const [parallelAdded, setParallelAdded] = useState(false)
+  const graphData = !stepAdded ? EMPTY_DATA : parallelAdded ? PARALLEL_DATA : STEP_ADDED_DATA
 
   return (
-    <AddStepContext.Provider value={{ selected: addStepOpen, onOpen: () => setAddStepOpen(true) }}>
+    <AddStepContext.Provider
+      value={{
+        selected: addStepOpen,
+        onOpen: () => setAddStepOpen(true),
+        onAddParallel: () => setParallelAdded(true)
+      }}
+    >
     <div className="flex h-full flex-col">
       {/* Page header: title + tabs + run */}
       <div
