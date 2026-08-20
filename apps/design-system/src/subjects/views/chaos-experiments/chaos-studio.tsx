@@ -186,7 +186,7 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
               <IconV2 name="more-horizontal" />
             </Button>
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end" className="min-w-[208px]" onClick={e => e.stopPropagation()}>
+          <DropdownMenu.Content side="right" align="start" className="min-w-[208px]" onClick={e => e.stopPropagation()}>
             <DropdownMenu.IconItem icon="edit-pencil" title="Edit" onClick={() => onEdit(name)} />
             <DropdownMenu.Separator />
             <DropdownMenu.IconItem icon="plus" title="Add stage before" onClick={() => onAddStageBefore(name)} />
