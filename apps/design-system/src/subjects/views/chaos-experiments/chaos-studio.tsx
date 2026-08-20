@@ -35,12 +35,18 @@ const groupIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepGroup
 const parallelIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepParallelRaw)}")`
 
 
-// Lets graph nodes reflect/trigger view-owned state: opening the Add Step drawer and adding a
-// parallel node from a step's floating "+" button.
-const AddStepContext = createContext<{ selected: boolean; onOpen: () => void; onAddParallel: () => void }>({
+// Lets graph nodes reflect/trigger view-owned state: opening the Add Step drawer from the empty
+// placeholder or from a step's floating "+" buttons (parallel = below, sequential = right).
+const AddStepContext = createContext<{
+  selected: boolean
+  onOpen: () => void
+  onAddParallel: () => void
+  onAddSequential: () => void
+}>({
   selected: false,
   onOpen: () => undefined,
-  onAddParallel: () => undefined
+  onAddParallel: () => undefined,
+  onAddSequential: () => undefined
 })
 
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
@@ -100,7 +106,7 @@ interface PodDeleteNodeData {
 
 function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDeleteNodeData> }) {
   const { name, duration, interval } = node.data
-  const { onAddParallel } = useContext(AddStepContext)
+  const { onAddParallel, onAddSequential } = useContext(AddStepContext)
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -185,11 +191,41 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           size="sm"
           iconOnly
           rounded
-          aria-label="Add"
+          aria-label="Add parallel step"
           tooltipProps={{ content: 'Add', side: 'top' }}
           onClick={event => {
             event.stopPropagation()
             onAddParallel()
+          }}
+        >
+          <IconV2 name="plus" />
+        </Button>
+      </div>
+
+      {/* floating add-sequential button — appears on hover to the right of the node */}
+      <div
+        className="flex items-center"
+        style={{
+          position: 'absolute',
+          left: '100%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          paddingLeft: 10,
+          opacity: hovered ? 1 : 0,
+          pointerEvents: hovered ? 'auto' : 'none',
+          transition: 'opacity 150ms ease'
+        }}
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          iconOnly
+          rounded
+          aria-label="Add sequential step"
+          tooltipProps={{ content: 'Add', side: 'top' }}
+          onClick={event => {
+            event.stopPropagation()
+            onAddSequential()
           }}
         >
           <IconV2 name="plus" />
@@ -265,6 +301,14 @@ const PARALLEL_DATA: AnyContainerNodeType[] = [
     config: { minWidth: 220, minHeight: 160 },
     children: [podDeleteNode('pod-delete-538a'), podDeleteNode('pod-delete-6b2c')]
   },
+  END_NODE
+]
+
+// After adding a sequential node: a second step runs in series after the first
+const SEQUENTIAL_DATA: AnyContainerNodeType[] = [
+  START_NODE,
+  podDeleteNode('pod-delete-538a'),
+  podDeleteNode('pod-delete-6b2c'),
   END_NODE
 ]
 
@@ -661,24 +705,30 @@ export const ChaosStudioView = () => {
   const [activeTab, setActiveTab] = useState('studio')
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
-  const [stepAdded, setStepAdded] = useState(false)
-  const [parallelAdded, setParallelAdded] = useState(false)
-  // Whether the drawer was opened via a node's "+" (adds a parallel step) vs the empty placeholder.
-  const [pendingParallel, setPendingParallel] = useState(false)
-  const graphData = !stepAdded ? EMPTY_DATA : parallelAdded ? PARALLEL_DATA : STEP_ADDED_DATA
+  const [layout, setLayout] = useState<'empty' | 'single' | 'parallel' | 'sequential'>('empty')
+  // What the drawer's "Add step" should produce, based on how it was opened.
+  const [pendingAdd, setPendingAdd] = useState<'initial' | 'parallel' | 'sequential'>('initial')
+  const graphData =
+    layout === 'empty'
+      ? EMPTY_DATA
+      : layout === 'parallel'
+        ? PARALLEL_DATA
+        : layout === 'sequential'
+          ? SEQUENTIAL_DATA
+          : STEP_ADDED_DATA
+
+  const openDrawer = (mode: 'initial' | 'parallel' | 'sequential') => {
+    setPendingAdd(mode)
+    setAddStepOpen(true)
+  }
 
   return (
     <AddStepContext.Provider
       value={{
         selected: addStepOpen,
-        onOpen: () => {
-          setPendingParallel(false)
-          setAddStepOpen(true)
-        },
-        onAddParallel: () => {
-          setPendingParallel(true)
-          setAddStepOpen(true)
-        }
+        onOpen: () => openDrawer('initial'),
+        onAddParallel: () => openDrawer('parallel'),
+        onAddSequential: () => openDrawer('sequential')
       }}
     >
     <div className="flex h-full flex-col">
@@ -793,9 +843,7 @@ export const ChaosStudioView = () => {
         open={addStepOpen}
         onOpenChange={setAddStepOpen}
         onAddStep={() => {
-          if (pendingParallel) setParallelAdded(true)
-          else setStepAdded(true)
-          setPendingParallel(false)
+          setLayout(pendingAdd === 'initial' ? 'single' : pendingAdd)
           setAddStepOpen(false)
         }}
       />
