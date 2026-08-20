@@ -1104,6 +1104,9 @@ export const ChaosStudioView = () => {
                 level1: `<path d="${path}" id="${id}" fill="none" stroke="var(--cn-border-1)" />`,
                 level2: ''
               })}
+              // We draw plain connector lines (no arrow/dot port markers), so drop the default
+              // 4px target-port gap that would otherwise leave a break before each node.
+              getPort={() => ({ portSvg: '', rightGap: 0 })}
               edgesConfig={{ radius: 10, parallelNodeOffset: 10, serialNodeOffset: 10 }}
             />
           </CanvasProvider>
