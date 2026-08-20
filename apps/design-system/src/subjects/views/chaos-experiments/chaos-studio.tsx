@@ -343,12 +343,14 @@ const makeStep = (kind: StepKind, index: number): StepDef => {
 
 const STEP_WIDTH = 220
 const STEP_HEIGHT = 160
-// Serial container spacing (see pipeline-graph defaults): 42px padding each side + 36px between nodes.
-const SERIAL_PADDING = 42
+// Gap the serial container places between adjacent nodes (pipeline-graph default), i.e. the length
+// of the connecting line drawn between two stacked steps.
 const SERIAL_NODE_GAP = 36
-// Rendered width of a sequential lane of `len` steps, used to stretch a single-step lane so it
-// visually spans its longer sibling lane (matching the design).
-const laneWidth = (len: number) => 2 * SERIAL_PADDING + len * STEP_WIDTH + (len - 1) * SERIAL_NODE_GAP
+// How wide to stretch a single-step lane so it spans its longer sibling lane: exactly the combined
+// width of that lane's nodes plus the connecting lines between them (no outer padding). Because the
+// serial container pads both sides equally, a node this wide, centered in the group, lines its left
+// edge up with the first node above and its right edge with the last.
+const spanWidth = (len: number) => len * STEP_WIDTH + (len - 1) * SERIAL_NODE_GAP
 
 const stepToNode = (
   step: StepDef,
@@ -432,7 +434,7 @@ const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] => {
         // when its sibling lane is a chain it can release the last stage back out of.
         const siblingMax = Math.max(0, ...slot.branches.filter((_, j) => j !== bi).map(b => b.length))
         return stepToNode(branch[0], {
-          width: maxLen > 1 ? laneWidth(maxLen) : undefined,
+          width: maxLen > 1 ? spanWidth(maxLen) : undefined,
           extendable: canAbsorb && branch.length === minLen,
           retractable: slot.branches.length === 2 && siblingMax > 1
         })
