@@ -49,6 +49,7 @@ const AddStepContext = createContext<{
   onEdit: (nodeName: string) => void
   onAddStageBefore: (nodeName: string) => void
   onDelete: (nodeName: string) => void
+  onAddAtEnd: () => void
 }>({
   selected: false,
   onOpen: () => undefined,
@@ -58,12 +59,58 @@ const AddStepContext = createContext<{
   onRetract: () => undefined,
   onEdit: () => undefined,
   onAddStageBefore: () => undefined,
-  onDelete: () => undefined
+  onDelete: () => undefined,
+  onAddAtEnd: () => undefined
 })
 
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
 const StartNodeComponent = () => <PipelineNodes.StartNode />
-const EndNodeComponent = () => <PipelineNodes.EndNode />
+
+/**
+ * The end (stop) node, plus a floating "+" revealed when hovering the connector just before it —
+ * lets the user add a new stage after the last set of nodes.
+ */
+function EndNodeComponent() {
+  const { onAddAtEnd } = useContext(AddStepContext)
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div className="relative size-full" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <PipelineNodes.EndNode />
+      {/* invisible hover target over the connector line just before the stop icon */}
+      <div aria-hidden style={{ position: 'absolute', top: 0, bottom: 0, right: '100%', width: 40 }} />
+      <div
+        className="flex items-center"
+        style={{
+          position: 'absolute',
+          right: '100%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          paddingRight: 10,
+          zIndex: 20,
+          opacity: hovered ? 1 : 0,
+          pointerEvents: hovered ? 'auto' : 'none',
+          transition: 'opacity 150ms ease'
+        }}
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          iconOnly
+          rounded
+          aria-label="Add stage at end"
+          tooltipProps={{ content: 'Add', side: 'top' }}
+          style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
+          onClick={event => {
+            event.stopPropagation()
+            onAddAtEnd()
+          }}
+        >
+          <IconV2 name="plus" />
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 /**
  * The empty-step placeholder card: a header (smiley icon + "Add step" + more button) over an
@@ -1024,11 +1071,30 @@ export const ChaosStudioView = () => {
       const step = makeStep(kind, countNodes(prev))
       if (pendingAdd === 'initial') return [{ kind: 'single', step }]
       if (pendingAdd === 'sequential' || pendingAdd === 'sequential-before') {
-        // insert a new single step as its own stage, before or after the targeted slot
+        const before = pendingAdd === 'sequential-before'
         const idx = prev.findIndex(slot => slotHasName(slot, pendingTarget))
-        const at = idx === -1 ? prev.length : pendingAdd === 'sequential-before' ? idx : idx + 1
+        // No specific target (the end-of-graph "+") → add a new stage at the very end.
+        if (idx === -1) return [...prev, { kind: 'single', step }]
+
+        const slot = prev[idx]
+        if (slot.kind === 'parallel') {
+          // The target lives in one lane: grow that lane into a sequence, so the sibling lane(s)
+          // run parallel to the whole sequence.
+          const branches = slot.branches.map(branch => {
+            const bi = branch.findIndex(s => s.name === pendingTarget)
+            if (bi === -1) return branch
+            const nextBranch = [...branch]
+            nextBranch.splice(before ? bi : bi + 1, 0, step)
+            return nextBranch
+          })
+          const next = [...prev]
+          next[idx] = { kind: 'parallel', branches }
+          return next
+        }
+
+        // A standalone stage: insert a new stage before/after it.
         const next = [...prev]
-        next.splice(at, 0, { kind: 'single', step })
+        next.splice(before ? idx : idx + 1, 0, { kind: 'single', step })
         return next
       }
       // parallel: fold the new step into the targeted slot as a new lane
@@ -1116,7 +1182,8 @@ export const ChaosStudioView = () => {
         onRetract: retractStep,
         onEdit: editStep,
         onAddStageBefore: nodeName => openDrawer('sequential-before', nodeName),
-        onDelete: removeStep
+        onDelete: removeStep,
+        onAddAtEnd: () => openDrawer('sequential', null)
       }}
     >
     <div className="flex h-full flex-col">
