@@ -505,11 +505,16 @@ const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] => {
         // it's (one of) the shortest lane(s) with a following stage to absorb, and retractable
         // when its sibling lane is a chain it can release the last stage back out of.
         const siblingMax = Math.max(0, ...slot.branches.filter((_, j) => j !== bi).map(b => b.length))
-        return stepToNode(branch[0], {
-          width: maxLen > 1 ? spanWidth(maxLen) : undefined,
+        const spanning = maxLen > 1
+        const node = stepToNode(branch[0], {
+          width: spanning ? spanWidth(maxLen) : undefined,
           extendable: canAbsorb && branch.length === minLen,
           retractable: slot.branches.length === 2 && siblingMax > 1
         })
+        // When this lane spans a sibling series, wrap it in a serial container too so both lanes
+        // share the same port geometry (equal side padding) — otherwise the fork is asymmetric
+        // and the connector kinks.
+        return spanning ? { type: ChaosNodeType.Serial, data: {}, config: {}, children: [node] } : node
       })
     }
   })
