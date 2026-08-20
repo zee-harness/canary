@@ -181,6 +181,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           top: '100%',
           transform: 'translateX(-50%)',
           paddingTop: 10,
+          zIndex: 20,
           opacity: hovered ? 1 : 0,
           pointerEvents: hovered ? 'auto' : 'none',
           transition: 'opacity 150ms ease'
@@ -212,6 +213,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           top: '50%',
           transform: 'translateY(-50%)',
           paddingLeft: 10,
+          zIndex: 20,
           opacity: hovered ? 1 : 0,
           pointerEvents: hovered ? 'auto' : 'none',
           transition: 'opacity 150ms ease'
