@@ -98,14 +98,14 @@ function AddStepNodeComponent() {
 }
 
 /** Populated step card shown after a step is added (header + footer with its params). */
-interface PodDeleteNodeData {
+interface StepNodeData {
   name: string
-  duration: number
-  interval: number
+  icon: IconV2NamesType
+  lines: string[]
 }
 
-function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDeleteNodeData> }) {
-  const { name, duration, interval } = node.data
+function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> }) {
+  const { name, icon, lines } = node.data
   const { onAddParallel, onAddSequential } = useContext(AddStepContext)
   const [hovered, setHovered] = useState(false)
   return (
@@ -139,7 +139,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
             color: 'var(--cn-bg-1)'
           }}
         >
-          <IconV2 name="chaos-fault" size="sm" />
+          <IconV2 name={icon} size="sm" />
         </div>
         <Text variant="body-single-line-strong" color="foreground-1" className="min-w-0 flex-1" truncate>
           {name}
@@ -162,12 +162,11 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
         style={{ backgroundColor: 'var(--cn-comp-pipeline-card-footer, var(--cn-bg-2))', padding: '12px 16px' }}
       >
         <div className="flex flex-col" style={{ gap: 6 }}>
-          <Text as="p" variant="caption-normal" color="foreground-3">
-            Duration: {duration}s
-          </Text>
-          <Text as="p" variant="caption-normal" color="foreground-3">
-            Interval: {interval}s
-          </Text>
+          {lines.map(line => (
+            <Text key={line} as="p" variant="caption-normal" color="foreground-3">
+              {line}
+            </Text>
+          ))}
         </div>
       </div>
     </div>
@@ -264,14 +263,31 @@ enum ChaosNodeType {
 const nodes: NodeContent[] = [
   { type: ChaosNodeType.Start, containerType: ContainerNode.leaf, component: StartNodeComponent },
   { type: ChaosNodeType.AddStep, containerType: ContainerNode.leaf, component: AddStepNodeComponent },
-  { type: ChaosNodeType.PodDelete, containerType: ContainerNode.leaf, component: PodDeleteStepContentNode },
+  { type: ChaosNodeType.PodDelete, containerType: ContainerNode.leaf, component: StepContentNode },
   { type: ChaosNodeType.Parallel, containerType: ContainerNode.parallel, component: ParallelGroupContentNode },
   { type: ChaosNodeType.End, containerType: ContainerNode.leaf, component: EndNodeComponent }
 ]
 
-const podDeleteNode = (name: string): AnyContainerNodeType => ({
+// A configured step: its display name, chip icon, and footer summary lines.
+type StepKind = 'fault' | 'probe'
+interface StepDef {
+  name: string
+  icon: IconV2NamesType
+  lines: string[]
+}
+
+const STEP_SUFFIXES = ['538a', '6b2c', '7a3d', '9f2h', 'a1b2', 'c3d4']
+
+const makeStep = (kind: StepKind, index: number): StepDef => {
+  const suffix = STEP_SUFFIXES[index % STEP_SUFFIXES.length]
+  return kind === 'probe'
+    ? { name: `system-inline-probe-${suffix}`, icon: 'rt-probe', lines: ['Timeout: 10s', 'Interval: 2s'] }
+    : { name: `pod-delete-${suffix}`, icon: 'chaos-fault', lines: ['Duration: 30s', 'Interval: 10s'] }
+}
+
+const stepToNode = (step: StepDef): AnyContainerNodeType => ({
   type: ChaosNodeType.PodDelete,
-  data: { name, duration: 30, interval: 10 },
+  data: { name: step.name, icon: step.icon, lines: step.lines },
   config: { width: 220, height: 160 }
 })
 
@@ -295,27 +311,22 @@ const EMPTY_DATA: AnyContainerNodeType[] = [
 
 // Composable step model so parallel/sequential edits combine instead of replacing each other.
 // Each top-level slot is either a single step or a parallel group of steps.
-type StepSlot = { kind: 'single'; name: string } | { kind: 'parallel'; names: string[] }
-
-const NAME_POOL = ['pod-delete-538a', 'pod-delete-6b2c', 'pod-delete-7a3d', 'pod-delete-9f2h', 'pod-delete-a1b2']
+type StepSlot = { kind: 'single'; step: StepDef } | { kind: 'parallel'; steps: StepDef[] }
 
 const countNodes = (slots: StepSlot[]) =>
-  slots.reduce((total, slot) => total + (slot.kind === 'parallel' ? slot.names.length : 1), 0)
-
-/** Next mock step name, unique-ish by how many nodes already exist. */
-const nextStepName = (slots: StepSlot[]) => NAME_POOL[countNodes(slots) % NAME_POOL.length]
+  slots.reduce((total, slot) => total + (slot.kind === 'parallel' ? slot.steps.length : 1), 0)
 
 const slotHasName = (slot: StepSlot, name: string | null) =>
-  slot.kind === 'single' ? slot.name === name : slot.names.includes(name ?? '')
+  slot.kind === 'single' ? slot.step.name === name : slot.steps.some(step => step.name === name)
 
 const slotToNode = (slot: StepSlot): AnyContainerNodeType =>
   slot.kind === 'single'
-    ? podDeleteNode(slot.name)
+    ? stepToNode(slot.step)
     : {
         type: ChaosNodeType.Parallel,
         data: {},
         config: { minWidth: 220, minHeight: 160 },
-        children: slot.names.map(podDeleteNode)
+        children: slot.steps.map(stepToNode)
       }
 
 const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] =>
@@ -637,7 +648,46 @@ const PodDeleteStepDrawer = ({
   </Drawer.Root>
 )
 
-const AddStepDrawer = ({
+/** Collapsible section header (chevron + title) used inside the probe config drawer. */
+const DrawerSection = ({ title, children }: { title: string; children: ReactNode }) => {
+  const [open, setOpen] = useState(true)
+  return (
+    <div className="flex flex-col" style={{ gap: 16 }}>
+      <button type="button" onClick={() => setOpen(value => !value)} className="flex items-center" style={{ gap: 8 }}>
+        <IconV2 name={open ? 'nav-arrow-up' : 'nav-arrow-down'} size="sm" className="text-cn-2" />
+        <Text variant="heading-base" color="foreground-1">
+          {title}
+        </Text>
+      </button>
+      {open && (
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const PROBE_RUN_PROPS = [
+  { label: 'Timeout (in seconds)', value: 10 },
+  { label: 'Interval (in seconds)', value: 2 },
+  { label: 'Retry', value: 0 },
+  { label: 'Attempt', value: 1 },
+  { label: 'Polling interval (in seconds)', value: 10 },
+  { label: 'Initial delay (in seconds)', value: 5 }
+]
+
+const LabeledSelect = ({ label, value, options }: { label: string; value: string; options: string[] }) => (
+  <div className="flex flex-col" style={{ gap: 8 }}>
+    <Text variant="body-single-line-normal" color="foreground-1">
+      {label}
+    </Text>
+    <Select options={options.map(option => ({ value: option, label: option }))} value={value} onChange={() => undefined} />
+  </div>
+)
+
+/** Nested configuration drawer for the "System Inline Probe" step. */
+const SystemInlineProbeStepDrawer = ({
   open,
   onOpenChange,
   onAddStep
@@ -645,10 +695,91 @@ const AddStepDrawer = ({
   open: boolean
   onOpenChange: (open: boolean) => void
   onAddStep: () => void
+}) => (
+  <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+    <Drawer.Content size="sm">
+      <Drawer.Header>
+        <Drawer.Title>Add step: System Inline Probe</Drawer.Title>
+        <Drawer.Description>Simulates pod failure of random replicas of an application deployment.</Drawer.Description>
+      </Drawer.Header>
+
+      <Drawer.Body>
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          <DrawerSection title="Run properties">
+            {PROBE_RUN_PROPS.map(prop => (
+              <NumberInput key={prop.label} label={prop.label} defaultValue={prop.value} />
+            ))}
+          </DrawerSection>
+
+          <DrawerSection title="Probe properties">
+            {/* Command — mono code area with a purple mode prefix + character counter */}
+            <div className="flex flex-col" style={{ gap: 8 }}>
+              <div className="flex items-end justify-between">
+                <Text variant="body-single-line-normal" color="foreground-1">
+                  Command
+                </Text>
+                <Text variant="caption-normal" color="foreground-3">
+                  121 / 500
+                </Text>
+              </div>
+              <div
+                className="flex overflow-hidden"
+                style={{ borderRadius: 6, border: '1px solid var(--cn-border-2)', backgroundColor: 'var(--cn-bg-2)' }}
+              >
+                <div
+                  className="flex shrink-0 items-start justify-center"
+                  style={{
+                    width: 34,
+                    paddingTop: 8,
+                    borderRight: '1px solid var(--cn-border-2)',
+                    color: 'var(--cn-set-purple-outline-text, #ec8cff)'
+                  }}
+                >
+                  <IconV2 name="code-brackets" size="sm" />
+                </div>
+                <textarea
+                  defaultValue={'echo "hello world"'}
+                  spellCheck={false}
+                  className="text-cn-1 flex-1 resize-none bg-transparent outline-none"
+                  style={{ minHeight: 98, padding: '8px 12px', fontFamily: 'var(--cn-font-family-mono)', fontSize: 12 }}
+                />
+              </div>
+            </div>
+
+            <LabeledSelect label="Type" value="String" options={['String', 'Number', 'Boolean']} />
+            <LabeledSelect label="Comparison criteria" value="Matches" options={['Matches', 'Contains', 'Equals']} />
+            <TextInput label="Value" defaultValue="Hello World" />
+          </DrawerSection>
+        </div>
+      </Drawer.Body>
+
+      <Drawer.Footer>
+        <div className="flex w-full items-center justify-between">
+          <Button variant="secondary" size="sm" iconOnly aria-label="Delete step" tooltipProps={{ content: 'Delete' }}>
+            <IconV2 name="trash" />
+          </Button>
+          <Button size="sm" onClick={onAddStep}>
+            Add step
+          </Button>
+        </div>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+)
+
+const AddStepDrawer = ({
+  open,
+  onOpenChange,
+  onAddStep
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAddStep: (kind: StepKind) => void
 }) => {
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [podDeleteOpen, setPodDeleteOpen] = useState(false)
+  const [probeOpen, setProbeOpen] = useState(false)
   const steps = STEP_ITEMS.filter(
     step =>
       (activeCategory === 'all' || step.category === activeCategory) &&
@@ -688,7 +819,13 @@ const AddStepDrawer = ({
                   <AddStepCard
                     key={step.title}
                     {...step}
-                    onClick={step.title === 'Pod Delete' ? () => setPodDeleteOpen(true) : undefined}
+                    onClick={
+                      step.title === 'Pod Delete'
+                        ? () => setPodDeleteOpen(true)
+                        : step.title === 'System Inline Probe'
+                          ? () => setProbeOpen(true)
+                          : undefined
+                    }
                   />
                 ))}
               </div>
@@ -697,13 +834,21 @@ const AddStepDrawer = ({
         </Drawer.Body>
       </Drawer.Content>
 
-      {/* Nested step-config drawer, opened from the Pod Delete card. */}
+      {/* Nested step-config drawers, opened from the step cards. */}
       <PodDeleteStepDrawer
         open={podDeleteOpen}
         onOpenChange={setPodDeleteOpen}
         onAddStep={() => {
           setPodDeleteOpen(false)
-          onAddStep()
+          onAddStep('fault')
+        }}
+      />
+      <SystemInlineProbeStepDrawer
+        open={probeOpen}
+        onOpenChange={setProbeOpen}
+        onAddStep={() => {
+          setProbeOpen(false)
+          onAddStep('probe')
         }}
       />
     </Drawer.Root>
@@ -726,23 +871,23 @@ export const ChaosStudioView = () => {
     setAddStepOpen(true)
   }
 
-  const commitAddStep = () => {
+  const commitAddStep = (kind: StepKind) => {
     setSteps(prev => {
-      const name = nextStepName(prev)
-      if (pendingAdd === 'initial') return [{ kind: 'single', name }]
+      const step = makeStep(kind, countNodes(prev))
+      if (pendingAdd === 'initial') return [{ kind: 'single', step }]
       if (pendingAdd === 'sequential') {
         // insert a new single step after the targeted slot (or at the end)
         const idx = prev.findIndex(slot => slotHasName(slot, pendingTarget))
         const next = [...prev]
-        next.splice(idx === -1 ? prev.length : idx + 1, 0, { kind: 'single', name })
+        next.splice(idx === -1 ? prev.length : idx + 1, 0, { kind: 'single', step })
         return next
       }
       // parallel: fold the new step into the targeted slot's parallel group
       return prev.map(slot => {
         if (!slotHasName(slot, pendingTarget)) return slot
         return slot.kind === 'single'
-          ? { kind: 'parallel', names: [slot.name, name] }
-          : { kind: 'parallel', names: [...slot.names, name] }
+          ? { kind: 'parallel', steps: [slot.step, step] }
+          : { kind: 'parallel', steps: [...slot.steps, step] }
       })
     })
     setAddStepOpen(false)
