@@ -241,16 +241,7 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
 
 /** Minimal parallel container: a subtle bordered box wrapping its parallel child nodes. */
 function ParallelGroupContentNode({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{ borderRadius: 10, border: '1px solid var(--cn-border-2)', backgroundColor: 'var(--cn-bg-2)' }}
-      />
-      {children}
-    </>
-  )
+  return <>{children}</>
 }
 
 enum ChaosNodeType {
