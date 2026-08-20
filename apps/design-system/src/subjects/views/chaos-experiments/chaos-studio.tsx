@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useState } from 'react'
+import { createContext, type MouseEvent as ReactMouseEvent, type ReactNode, useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -116,13 +116,25 @@ interface StepNodeData {
 function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> }) {
   const { name, icon, lines, extendable, retractable } = node.data
   const { onAddParallel, onAddSequential, onExtend, onRetract } = useContext(AddStepContext)
-  const [hovered, setHovered] = useState(false)
+  // Reveal only the control for the edge being hovered: the "+" below when the cursor is near the
+  // bottom, and the right-edge stack when it's near the right. (The buttons sit outside the card
+  // but are DOM descendants, so hovering onto them keeps the zone active.)
+  const [zone, setZone] = useState<'bottom' | 'right' | null>(null)
+  const handleMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    const nearRight = x >= rect.width * 0.6
+    const nearBottom = y >= rect.height * 0.6
+    if (nearRight && nearBottom) {
+      // In the shared corner, pick whichever edge (or its gutter) the cursor is closer to.
+      setZone(rect.width - x <= rect.height - y ? 'right' : 'bottom')
+    } else if (nearRight) setZone('right')
+    else if (nearBottom) setZone('bottom')
+    else setZone(null)
+  }
   return (
-    <div
-      className="relative size-full"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className="relative size-full" onMouseMove={handleMouseMove} onMouseLeave={() => setZone(null)}>
       <div
         className="size-full overflow-hidden"
         style={{
@@ -180,7 +192,7 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
       </div>
     </div>
 
-      {/* floating add-parallel button — appears on hover below the node */}
+      {/* floating add-parallel button — appears when hovering below the node */}
       <div
         className="flex flex-col items-center"
         style={{
@@ -190,8 +202,8 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
           transform: 'translateX(-50%)',
           paddingTop: 10,
           zIndex: 20,
-          opacity: hovered ? 1 : 0,
-          pointerEvents: hovered ? 'auto' : 'none',
+          opacity: zone === 'bottom' ? 1 : 0,
+          pointerEvents: zone === 'bottom' ? 'auto' : 'none',
           transition: 'opacity 150ms ease'
         }}
       >
@@ -225,8 +237,8 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
           paddingLeft: 10,
           gap: 6,
           zIndex: 20,
-          opacity: hovered ? 1 : 0,
-          pointerEvents: hovered ? 'auto' : 'none',
+          opacity: zone === 'right' ? 1 : 0,
+          pointerEvents: zone === 'right' ? 'auto' : 'none',
           transition: 'opacity 150ms ease'
         }}
       >
