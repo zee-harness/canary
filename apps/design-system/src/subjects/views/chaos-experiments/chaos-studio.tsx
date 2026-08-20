@@ -40,8 +40,8 @@ const parallelIconMask = `url("data:image/svg+xml,${encodeURIComponent(addStepPa
 const AddStepContext = createContext<{
   selected: boolean
   onOpen: () => void
-  onAddParallel: () => void
-  onAddSequential: () => void
+  onAddParallel: (nodeName: string) => void
+  onAddSequential: (nodeName: string) => void
 }>({
   selected: false,
   onOpen: () => undefined,
@@ -197,7 +197,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
           onClick={event => {
             event.stopPropagation()
-            onAddParallel()
+            onAddParallel(name)
           }}
         >
           <IconV2 name="plus" />
@@ -229,7 +229,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
           onClick={event => {
             event.stopPropagation()
-            onAddSequential()
+            onAddSequential(name)
           }}
         >
           <IconV2 name="plus" />
@@ -293,28 +293,33 @@ const EMPTY_DATA: AnyContainerNodeType[] = [
   END_NODE
 ]
 
-// After adding the Pod Delete step: start → populated step card → end
-const STEP_ADDED_DATA: AnyContainerNodeType[] = [START_NODE, podDeleteNode('pod-delete-538a'), END_NODE]
+// Composable step model so parallel/sequential edits combine instead of replacing each other.
+// Each top-level slot is either a single step or a parallel group of steps.
+type StepSlot = { kind: 'single'; name: string } | { kind: 'parallel'; names: string[] }
 
-// After adding a parallel node: the step sits in a parallel container beside a second node
-const PARALLEL_DATA: AnyContainerNodeType[] = [
-  START_NODE,
-  {
-    type: ChaosNodeType.Parallel,
-    data: {},
-    config: { minWidth: 220, minHeight: 160 },
-    children: [podDeleteNode('pod-delete-538a'), podDeleteNode('pod-delete-6b2c')]
-  },
-  END_NODE
-]
+const NAME_POOL = ['pod-delete-538a', 'pod-delete-6b2c', 'pod-delete-7a3d', 'pod-delete-9f2h', 'pod-delete-a1b2']
 
-// After adding a sequential node: a second step runs in series after the first
-const SEQUENTIAL_DATA: AnyContainerNodeType[] = [
-  START_NODE,
-  podDeleteNode('pod-delete-538a'),
-  podDeleteNode('pod-delete-6b2c'),
-  END_NODE
-]
+const countNodes = (slots: StepSlot[]) =>
+  slots.reduce((total, slot) => total + (slot.kind === 'parallel' ? slot.names.length : 1), 0)
+
+/** Next mock step name, unique-ish by how many nodes already exist. */
+const nextStepName = (slots: StepSlot[]) => NAME_POOL[countNodes(slots) % NAME_POOL.length]
+
+const slotHasName = (slot: StepSlot, name: string | null) =>
+  slot.kind === 'single' ? slot.name === name : slot.names.includes(name ?? '')
+
+const slotToNode = (slot: StepSlot): AnyContainerNodeType =>
+  slot.kind === 'single'
+    ? podDeleteNode(slot.name)
+    : {
+        type: ChaosNodeType.Parallel,
+        data: {},
+        config: { minWidth: 220, minHeight: 160 },
+        children: slot.names.map(podDeleteNode)
+      }
+
+const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] =>
+  slots.length === 0 ? EMPTY_DATA : [START_NODE, ...slots.map(slotToNode), END_NODE]
 
 const branchOptions = [{ value: 'main', label: 'main' }]
 
@@ -709,30 +714,47 @@ export const ChaosStudioView = () => {
   const [activeTab, setActiveTab] = useState('studio')
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
-  const [layout, setLayout] = useState<'empty' | 'single' | 'parallel' | 'sequential'>('empty')
-  // What the drawer's "Add step" should produce, based on how it was opened.
+  const [steps, setSteps] = useState<StepSlot[]>([])
+  // How the drawer was opened + which node's "+" triggered it (for parallel/sequential targeting).
   const [pendingAdd, setPendingAdd] = useState<'initial' | 'parallel' | 'sequential'>('initial')
-  const graphData =
-    layout === 'empty'
-      ? EMPTY_DATA
-      : layout === 'parallel'
-        ? PARALLEL_DATA
-        : layout === 'sequential'
-          ? SEQUENTIAL_DATA
-          : STEP_ADDED_DATA
+  const [pendingTarget, setPendingTarget] = useState<string | null>(null)
+  const graphData = buildGraphData(steps)
 
-  const openDrawer = (mode: 'initial' | 'parallel' | 'sequential') => {
+  const openDrawer = (mode: 'initial' | 'parallel' | 'sequential', target: string | null) => {
     setPendingAdd(mode)
+    setPendingTarget(target)
     setAddStepOpen(true)
+  }
+
+  const commitAddStep = () => {
+    setSteps(prev => {
+      const name = nextStepName(prev)
+      if (pendingAdd === 'initial') return [{ kind: 'single', name }]
+      if (pendingAdd === 'sequential') {
+        // insert a new single step after the targeted slot (or at the end)
+        const idx = prev.findIndex(slot => slotHasName(slot, pendingTarget))
+        const next = [...prev]
+        next.splice(idx === -1 ? prev.length : idx + 1, 0, { kind: 'single', name })
+        return next
+      }
+      // parallel: fold the new step into the targeted slot's parallel group
+      return prev.map(slot => {
+        if (!slotHasName(slot, pendingTarget)) return slot
+        return slot.kind === 'single'
+          ? { kind: 'parallel', names: [slot.name, name] }
+          : { kind: 'parallel', names: [...slot.names, name] }
+      })
+    })
+    setAddStepOpen(false)
   }
 
   return (
     <AddStepContext.Provider
       value={{
         selected: addStepOpen,
-        onOpen: () => openDrawer('initial'),
-        onAddParallel: () => openDrawer('parallel'),
-        onAddSequential: () => openDrawer('sequential')
+        onOpen: () => openDrawer('initial', null),
+        onAddParallel: nodeName => openDrawer('parallel', nodeName),
+        onAddSequential: nodeName => openDrawer('sequential', nodeName)
       }}
     >
     <div className="flex h-full flex-col">
@@ -843,14 +865,7 @@ export const ChaosStudioView = () => {
       </div>
     </div>
 
-      <AddStepDrawer
-        open={addStepOpen}
-        onOpenChange={setAddStepOpen}
-        onAddStep={() => {
-          setLayout(pendingAdd === 'initial' ? 'single' : pendingAdd)
-          setAddStepOpen(false)
-        }}
-      />
+      <AddStepDrawer open={addStepOpen} onOpenChange={setAddStepOpen} onAddStep={commitAddStep} />
     </AddStepContext.Provider>
   )
 }
