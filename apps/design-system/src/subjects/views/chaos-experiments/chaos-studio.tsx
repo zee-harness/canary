@@ -13,6 +13,7 @@ import {
   Accordion,
   Button,
   Drawer,
+  DropdownMenu,
   IconV2,
   type IconV2NamesType,
   NumberInput,
@@ -45,13 +46,19 @@ const AddStepContext = createContext<{
   onAddSequential: (nodeName: string) => void
   onExtend: (nodeName: string) => void
   onRetract: (nodeName: string) => void
+  onEdit: (nodeName: string) => void
+  onAddStageBefore: (nodeName: string) => void
+  onDelete: (nodeName: string) => void
 }>({
   selected: false,
   onOpen: () => undefined,
   onAddParallel: () => undefined,
   onAddSequential: () => undefined,
   onExtend: () => undefined,
-  onRetract: () => undefined
+  onRetract: () => undefined,
+  onEdit: () => undefined,
+  onAddStageBefore: () => undefined,
+  onDelete: () => undefined
 })
 
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
@@ -115,7 +122,8 @@ interface StepNodeData {
 
 function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> }) {
   const { name, icon, lines, extendable, retractable } = node.data
-  const { onAddParallel, onAddSequential, onExtend, onRetract } = useContext(AddStepContext)
+  const { onAddParallel, onAddSequential, onExtend, onRetract, onEdit, onAddStageBefore, onDelete } =
+    useContext(AddStepContext)
   // Reveal only the control for the edge being hovered: the "+" below when the cursor is near the
   // bottom, and the right-edge stack when it's near the right. (The buttons sit outside the card
   // but are DOM descendants, so hovering onto them keeps the zone active.)
@@ -165,16 +173,33 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
         <Text variant="body-single-line-strong" color="foreground-1" className="min-w-0 flex-1" truncate>
           {name}
         </Text>
-        <Button
-          variant="ghost"
-          size="xs"
-          iconOnly
-          aria-label="More"
-          tooltipProps={{ content: 'More' }}
-          onClick={e => e.stopPropagation()}
-        >
-          <IconV2 name="more-horizontal" />
-        </Button>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              aria-label="More"
+              tooltipProps={{ content: 'More' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <IconV2 name="more-horizontal" />
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" className="min-w-[208px]" onClick={e => e.stopPropagation()}>
+            <DropdownMenu.IconItem icon="edit-pencil" title="Edit" onClick={() => onEdit(name)} />
+            <DropdownMenu.Separator />
+            <DropdownMenu.IconItem icon="plus" title="Add stage before" onClick={() => onAddStageBefore(name)} />
+            <DropdownMenu.IconItem icon="plus" title="Add stage after" onClick={() => onAddSequential(name)} />
+            <DropdownMenu.Separator />
+            <DropdownMenu.IconItem
+              icon="trash"
+              iconClassName="text-cn-danger"
+              title={<Text color="danger">Delete</Text>}
+              onClick={() => onDelete(name)}
+            />
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
 
       {/* footer: step params */}
@@ -685,16 +710,20 @@ const AddStepCard = ({ icon, iconMask, title, description, onClick }: StepItem &
 const PodDeleteStepDrawer = ({
   open,
   onOpenChange,
-  onAddStep
+  onAddStep,
+  mode = 'add',
+  stepName = 'pod-delete-538a'
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAddStep: () => void
+  mode?: 'add' | 'edit'
+  stepName?: string
 }) => (
   <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
     <Drawer.Content size="sm">
       <Drawer.Header>
-        <Drawer.Title>Add step: Pod Delete</Drawer.Title>
+        <Drawer.Title>{mode === 'edit' ? 'Edit: Pod Delete' : 'Add step: Pod Delete'}</Drawer.Title>
         <Drawer.Description>Simulates pod failure of random replicas of an application deployment.</Drawer.Description>
       </Drawer.Header>
 
@@ -702,7 +731,8 @@ const PodDeleteStepDrawer = ({
         <div className="flex flex-col" style={{ gap: 16 }}>
           <TextInput
             label="Name"
-            defaultValue="pod-delete-538a"
+            key={stepName}
+            defaultValue={stepName}
             suffix={
               <span
                 className="inline-flex items-center"
@@ -753,7 +783,7 @@ const PodDeleteStepDrawer = ({
             <IconV2 name="trash" />
           </Button>
           <Button size="sm" onClick={onAddStep}>
-            Add step
+            {mode === 'edit' ? 'Save' : 'Add step'}
           </Button>
         </div>
       </Drawer.Footer>
@@ -803,16 +833,18 @@ const LabeledSelect = ({ label, value, options }: { label: string; value: string
 const SystemInlineProbeStepDrawer = ({
   open,
   onOpenChange,
-  onAddStep
+  onAddStep,
+  mode = 'add'
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAddStep: () => void
+  mode?: 'add' | 'edit'
 }) => (
   <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
     <Drawer.Content size="sm">
       <Drawer.Header>
-        <Drawer.Title>Add step: System Inline Probe</Drawer.Title>
+        <Drawer.Title>{mode === 'edit' ? 'Edit: System Inline Probe' : 'Add step: System Inline Probe'}</Drawer.Title>
         <Drawer.Description>Simulates pod failure of random replicas of an application deployment.</Drawer.Description>
       </Drawer.Header>
 
@@ -872,7 +904,7 @@ const SystemInlineProbeStepDrawer = ({
             <IconV2 name="trash" />
           </Button>
           <Button size="sm" onClick={onAddStep}>
-            Add step
+            {mode === 'edit' ? 'Save' : 'Add step'}
           </Button>
         </div>
       </Drawer.Footer>
@@ -974,12 +1006,14 @@ export const ChaosStudioView = () => {
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
   const [steps, setSteps] = useState<StepSlot[]>([])
-  // How the drawer was opened + which node's "+" triggered it (for parallel/sequential targeting).
-  const [pendingAdd, setPendingAdd] = useState<'initial' | 'parallel' | 'sequential'>('initial')
+  // How the drawer was opened + which node's control triggered it (for add-stage / parallel targeting).
+  const [pendingAdd, setPendingAdd] = useState<'initial' | 'parallel' | 'sequential' | 'sequential-before'>('initial')
   const [pendingTarget, setPendingTarget] = useState<string | null>(null)
+  // The step being edited via the node's "…" menu (drives which config drawer opens).
+  const [editTarget, setEditTarget] = useState<{ name: string; kind: StepKind } | null>(null)
   const graphData = buildGraphData(steps)
 
-  const openDrawer = (mode: 'initial' | 'parallel' | 'sequential', target: string | null) => {
+  const openDrawer = (mode: 'initial' | 'parallel' | 'sequential' | 'sequential-before', target: string | null) => {
     setPendingAdd(mode)
     setPendingTarget(target)
     setAddStepOpen(true)
@@ -989,11 +1023,12 @@ export const ChaosStudioView = () => {
     setSteps(prev => {
       const step = makeStep(kind, countNodes(prev))
       if (pendingAdd === 'initial') return [{ kind: 'single', step }]
-      if (pendingAdd === 'sequential') {
-        // insert a new single step after the targeted slot (or at the end)
+      if (pendingAdd === 'sequential' || pendingAdd === 'sequential-before') {
+        // insert a new single step as its own stage, before or after the targeted slot
         const idx = prev.findIndex(slot => slotHasName(slot, pendingTarget))
+        const at = idx === -1 ? prev.length : pendingAdd === 'sequential-before' ? idx : idx + 1
         const next = [...prev]
-        next.splice(idx === -1 ? prev.length : idx + 1, 0, { kind: 'single', step })
+        next.splice(at, 0, { kind: 'single', step })
         return next
       }
       // parallel: fold the new step into the targeted slot as a new lane
@@ -1046,6 +1081,30 @@ export const ChaosStudioView = () => {
     })
   }
 
+  // Remove a node. Dropping it from a parallel lane collapses empty lanes; a group left with a
+  // single lane flattens back into sequential stages.
+  const removeStep = (nodeName: string) => {
+    setSteps(prev => {
+      const result: StepSlot[] = []
+      for (const slot of prev) {
+        if (slot.kind === 'single') {
+          if (slot.step.name !== nodeName) result.push(slot)
+          continue
+        }
+        const branches = slot.branches.map(branch => branch.filter(step => step.name !== nodeName)).filter(b => b.length)
+        if (branches.length === 0) continue
+        if (branches.length === 1) branches[0].forEach(step => result.push({ kind: 'single', step }))
+        else result.push({ kind: 'parallel', branches })
+      }
+      return result
+    })
+  }
+
+  // Open the matching config drawer for an existing step (fault vs probe inferred from its name).
+  const editStep = (nodeName: string) => {
+    setEditTarget({ name: nodeName, kind: nodeName.startsWith('system-inline-probe') ? 'probe' : 'fault' })
+  }
+
   return (
     <AddStepContext.Provider
       value={{
@@ -1054,7 +1113,10 @@ export const ChaosStudioView = () => {
         onAddParallel: nodeName => openDrawer('parallel', nodeName),
         onAddSequential: nodeName => openDrawer('sequential', nodeName),
         onExtend: extendStep,
-        onRetract: retractStep
+        onRetract: retractStep,
+        onEdit: editStep,
+        onAddStageBefore: nodeName => openDrawer('sequential-before', nodeName),
+        onDelete: removeStep
       }}
     >
     <div className="flex h-full flex-col">
@@ -1169,6 +1231,22 @@ export const ChaosStudioView = () => {
     </div>
 
       <AddStepDrawer open={addStepOpen} onOpenChange={setAddStepOpen} onAddStep={commitAddStep} />
+
+      {/* Edit config drawers, opened from a node's "…" menu. (Values are illustrative in this mock,
+          so Save just closes.) */}
+      <PodDeleteStepDrawer
+        open={editTarget?.kind === 'fault'}
+        onOpenChange={open => !open && setEditTarget(null)}
+        onAddStep={() => setEditTarget(null)}
+        mode="edit"
+        stepName={editTarget?.name}
+      />
+      <SystemInlineProbeStepDrawer
+        open={editTarget?.kind === 'probe'}
+        onOpenChange={open => !open && setEditTarget(null)}
+        onAddStep={() => setEditTarget(null)}
+        mode="edit"
+      />
     </AddStepContext.Provider>
   )
 }
