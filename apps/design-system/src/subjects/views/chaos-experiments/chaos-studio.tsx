@@ -43,11 +43,13 @@ const AddStepContext = createContext<{
   onOpen: () => void
   onAddParallel: (nodeName: string) => void
   onAddSequential: (nodeName: string) => void
+  onExtend: (nodeName: string) => void
 }>({
   selected: false,
   onOpen: () => undefined,
   onAddParallel: () => undefined,
-  onAddSequential: () => undefined
+  onAddSequential: () => undefined,
+  onExtend: () => undefined
 })
 
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
@@ -103,11 +105,13 @@ interface StepNodeData {
   name: string
   icon: IconV2NamesType
   lines: string[]
+  /** True when this node is the sole step of its parallel lane and can absorb the next stage. */
+  extendable?: boolean
 }
 
 function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> }) {
-  const { name, icon, lines } = node.data
-  const { onAddParallel, onAddSequential } = useContext(AddStepContext)
+  const { name, icon, lines, extendable } = node.data
+  const { onAddParallel, onAddSequential, onExtend } = useContext(AddStepContext)
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -204,7 +208,9 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
         </Button>
       </div>
 
-      {/* floating add-sequential button — appears on hover to the right of the node */}
+      {/* floating right-edge control — appears on hover to the right of the node.
+          A spanning-eligible node (sole step of its parallel lane) shows an "extend" handle
+          that pulls the next stage into the sibling lane; otherwise the add-sequential "+". */}
       <div
         className="flex items-center"
         style={{
@@ -219,28 +225,51 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
           transition: 'opacity 150ms ease'
         }}
       >
-        <Button
-          variant="outline"
-          size="sm"
-          iconOnly
-          rounded
-          aria-label="Add sequential step"
-          tooltipProps={{ content: 'Add', side: 'top' }}
-          style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
-          onClick={event => {
-            event.stopPropagation()
-            onAddSequential(name)
-          }}
-        >
-          <IconV2 name="plus" />
-        </Button>
+        {extendable ? (
+          <Button
+            variant="outline"
+            size="sm"
+            iconOnly
+            rounded
+            aria-label="Extend to run in parallel with next step"
+            tooltipProps={{ content: 'Run in parallel with next step', side: 'top' }}
+            style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
+            onClick={event => {
+              event.stopPropagation()
+              onExtend(name)
+            }}
+          >
+            <IconV2 name="arrows-leftright" />
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            iconOnly
+            rounded
+            aria-label="Add sequential step"
+            tooltipProps={{ content: 'Add', side: 'top' }}
+            style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
+            onClick={event => {
+              event.stopPropagation()
+              onAddSequential(name)
+            }}
+          >
+            <IconV2 name="plus" />
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
-/** Minimal parallel container: a subtle bordered box wrapping its parallel child nodes. */
+/** Transparent group containers: the graph draws the branch/lane edges, so these just pass
+    their children through (no stage background). Used for both parallel lanes and the
+    sequential chain nested inside a lane. */
 function ParallelGroupContentNode({ children }: { children: ReactNode }) {
+  return <>{children}</>
+}
+function SerialGroupContentNode({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
@@ -249,6 +278,7 @@ enum ChaosNodeType {
   AddStep = 'add-step',
   PodDelete = 'pod-delete',
   Parallel = 'parallel',
+  Serial = 'serial',
   End = 'end'
 }
 
@@ -257,6 +287,7 @@ const nodes: NodeContent[] = [
   { type: ChaosNodeType.AddStep, containerType: ContainerNode.leaf, component: AddStepNodeComponent },
   { type: ChaosNodeType.PodDelete, containerType: ContainerNode.leaf, component: StepContentNode },
   { type: ChaosNodeType.Parallel, containerType: ContainerNode.parallel, component: ParallelGroupContentNode },
+  { type: ChaosNodeType.Serial, containerType: ContainerNode.serial, component: SerialGroupContentNode },
   { type: ChaosNodeType.End, containerType: ContainerNode.leaf, component: EndNodeComponent }
 ]
 
@@ -277,10 +308,22 @@ const makeStep = (kind: StepKind, index: number): StepDef => {
     : { name: `pod-delete-${suffix}`, icon: 'chaos-fault', lines: ['Duration: 30s', 'Interval: 10s'] }
 }
 
-const stepToNode = (step: StepDef): AnyContainerNodeType => ({
+const STEP_WIDTH = 220
+const STEP_HEIGHT = 160
+// Serial container spacing (see pipeline-graph defaults): 42px padding each side + 36px between nodes.
+const SERIAL_PADDING = 42
+const SERIAL_NODE_GAP = 36
+// Rendered width of a sequential lane of `len` steps, used to stretch a single-step lane so it
+// visually spans its longer sibling lane (matching the design).
+const laneWidth = (len: number) => 2 * SERIAL_PADDING + len * STEP_WIDTH + (len - 1) * SERIAL_NODE_GAP
+
+const stepToNode = (
+  step: StepDef,
+  opts?: { width?: number; extendable?: boolean }
+): AnyContainerNodeType => ({
   type: ChaosNodeType.PodDelete,
-  data: { name: step.name, icon: step.icon, lines: step.lines },
-  config: { width: 220, height: 160 }
+  data: { name: step.name, icon: step.icon, lines: step.lines, extendable: !!opts?.extendable },
+  config: { width: opts?.width ?? STEP_WIDTH, height: STEP_HEIGHT }
 })
 
 const START_NODE: AnyContainerNodeType = {
@@ -302,27 +345,61 @@ const EMPTY_DATA: AnyContainerNodeType[] = [
 ]
 
 // Composable step model so parallel/sequential edits combine instead of replacing each other.
-// Each top-level slot is either a single step or a parallel group of steps.
-type StepSlot = { kind: 'single'; step: StepDef } | { kind: 'parallel'; steps: StepDef[] }
+// Each top-level slot is either a single step or a parallel group. A parallel group holds
+// branches (lanes), and each branch is itself a sequential chain of one or more steps — this
+// nesting is what lets one lane span several stages of another (parallel-of-series).
+type Branch = StepDef[]
+type StepSlot = { kind: 'single'; step: StepDef } | { kind: 'parallel'; branches: Branch[] }
 
 const countNodes = (slots: StepSlot[]) =>
-  slots.reduce((total, slot) => total + (slot.kind === 'parallel' ? slot.steps.length : 1), 0)
+  slots.reduce(
+    (total, slot) =>
+      total + (slot.kind === 'parallel' ? slot.branches.reduce((n, b) => n + b.length, 0) : 1),
+    0
+  )
 
 const slotHasName = (slot: StepSlot, name: string | null) =>
-  slot.kind === 'single' ? slot.step.name === name : slot.steps.some(step => step.name === name)
-
-const slotToNode = (slot: StepSlot): AnyContainerNodeType =>
   slot.kind === 'single'
-    ? stepToNode(slot.step)
-    : {
-        type: ChaosNodeType.Parallel,
-        data: {},
-        config: { minWidth: 220, minHeight: 160 },
-        children: slot.steps.map(stepToNode)
-      }
+    ? slot.step.name === name
+    : slot.branches.some(branch => branch.some(step => step.name === name))
 
-const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] =>
-  slots.length === 0 ? EMPTY_DATA : [START_NODE, ...slots.map(slotToNode), END_NODE]
+const branchToNode = (branch: Branch): AnyContainerNodeType =>
+  branch.length === 1
+    ? stepToNode(branch[0])
+    : { type: ChaosNodeType.Serial, data: {}, config: {}, children: branch.map(step => stepToNode(step)) }
+
+const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] => {
+  if (slots.length === 0) return EMPTY_DATA
+
+  const body = slots.map((slot, i): AnyContainerNodeType => {
+    if (slot.kind === 'single') return stepToNode(slot.step)
+
+    const lengths = slot.branches.map(b => b.length)
+    const maxLen = Math.max(...lengths)
+    const minLen = Math.min(...lengths)
+    // A single-step lane can extend only into a following single slot, and only for the simple
+    // two-lane case (keeps the "which lane spans" choice unambiguous).
+    const next = slots[i + 1]
+    const canAbsorb = slot.branches.length === 2 && next?.kind === 'single'
+
+    return {
+      type: ChaosNodeType.Parallel,
+      data: {},
+      config: { minWidth: STEP_WIDTH, minHeight: STEP_HEIGHT },
+      children: slot.branches.map(branch => {
+        if (branch.length > 1) return branchToNode(branch)
+        // A single-step lane: stretch it to span the longer sibling lane, and mark it
+        // extendable when it's (one of) the shortest lane(s) and there's a stage to absorb.
+        return stepToNode(branch[0], {
+          width: maxLen > 1 ? laneWidth(maxLen) : undefined,
+          extendable: canAbsorb && branch.length === minLen
+        })
+      })
+    }
+  })
+
+  return [START_NODE, ...body, END_NODE]
+}
 
 const branchOptions = [{ value: 'main', label: 'main' }]
 
@@ -875,15 +952,35 @@ export const ChaosStudioView = () => {
         next.splice(idx === -1 ? prev.length : idx + 1, 0, { kind: 'single', step })
         return next
       }
-      // parallel: fold the new step into the targeted slot's parallel group
+      // parallel: fold the new step into the targeted slot as a new lane
       return prev.map(slot => {
         if (!slotHasName(slot, pendingTarget)) return slot
         return slot.kind === 'single'
-          ? { kind: 'parallel', steps: [slot.step, step] }
-          : { kind: 'parallel', steps: [...slot.steps, step] }
+          ? { kind: 'parallel', branches: [[slot.step], [step]] }
+          : { kind: 'parallel', branches: [...slot.branches, [step]] }
       })
     })
     setAddStepOpen(false)
+  }
+
+  // "Extend": the clicked node's lane stays put (and becomes the spanning lane); the next
+  // stage is pulled into the sibling lane, turning it into a sequential chain.
+  const extendStep = (nodeName: string) => {
+    setSteps(prev => {
+      const idx = prev.findIndex(slot => slot.kind === 'parallel' && slotHasName(slot, nodeName))
+      const slot = prev[idx]
+      const next = prev[idx + 1]
+      if (!slot || slot.kind !== 'parallel' || slot.branches.length !== 2 || next?.kind !== 'single') {
+        return prev
+      }
+      const branches = slot.branches.map(branch =>
+        branch.some(step => step.name === nodeName) ? branch : [...branch, next.step]
+      )
+      const nextSlots = [...prev]
+      nextSlots[idx] = { kind: 'parallel', branches }
+      nextSlots.splice(idx + 1, 1) // the absorbed stage is no longer a standalone slot
+      return nextSlots
+    })
   }
 
   return (
@@ -892,7 +989,8 @@ export const ChaosStudioView = () => {
         selected: addStepOpen,
         onOpen: () => openDrawer('initial', null),
         onAddParallel: nodeName => openDrawer('parallel', nodeName),
-        onAddSequential: nodeName => openDrawer('sequential', nodeName)
+        onAddSequential: nodeName => openDrawer('sequential', nodeName),
+        onExtend: extendStep
       }}
     >
     <div className="flex h-full flex-col">
