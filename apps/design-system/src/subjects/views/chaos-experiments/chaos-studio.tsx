@@ -1255,6 +1255,10 @@ export const ChaosStudioView = () => {
               // We draw plain connector lines (no arrow/dot port markers), so drop the default
               // 4px target-port gap that would otherwise leave a break before each node.
               getPort={() => ({ portSvg: '', rightGap: 0 })}
+              // Symmetric vertical padding (the default is 50/20, which offsets container ports by
+              // 15px and kinks the start/end connector into a spanning parallel group).
+              serialContainerConfig={{ paddingTop: 35, paddingBottom: 35 }}
+              parallelContainerConfig={{ paddingTop: 35, paddingBottom: 35 }}
               edgesConfig={{ radius: 10, parallelNodeOffset: 22, serialNodeOffset: 10 }}
             />
           </CanvasProvider>
