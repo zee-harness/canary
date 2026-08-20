@@ -36,6 +36,8 @@ interface AnimatedNodeProps {
   finalStatus: FinalStatus
   icon: ReactNode
   onComplete?: () => void
+  /** Fired when a settled node is clicked, so the parent can open its logs drawer. */
+  onSelect?: () => void
 }
 
 /**
@@ -43,7 +45,7 @@ interface AnimatedNodeProps {
  * right edge lines up with the current second on the axis. It glows while running, then
  * settles into a completed (green) / error (red) card.
  */
-const AnimatedNode = ({ duration, title, footerLabel, finalStatus, icon, onComplete }: AnimatedNodeProps) => {
+const AnimatedNode = ({ duration, title, footerLabel, finalStatus, icon, onComplete, onSelect }: AnimatedNodeProps) => {
   const fullSeconds = duration / 1000
   const [width, setWidth] = useState(MIN_NODE_WIDTH)
   const [seconds, setSeconds] = useState(0)
@@ -87,6 +89,7 @@ const AnimatedNode = ({ duration, title, footerLabel, finalStatus, icon, onCompl
   }, [fullSeconds])
 
   const isRunning = phase === 'running'
+  const clickable = !isRunning && !!onSelect
   const borderColor = isRunning
     ? 'var(--cn-border-warning)'
     : finalStatus === 'error'
@@ -116,12 +119,26 @@ const AnimatedNode = ({ duration, title, footerLabel, finalStatus, icon, onCompl
 
       <div
         className="overflow-hidden"
+        role={clickable ? 'button' : undefined}
+        tabIndex={clickable ? 0 : undefined}
+        onClick={clickable ? onSelect : undefined}
+        onKeyDown={
+          clickable
+            ? e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onSelect?.()
+                }
+              }
+            : undefined
+        }
         style={{
           width,
           borderRadius: 8,
           border: `1px solid ${borderColor}`,
           backgroundColor: 'var(--cn-bg-1)',
           boxShadow: glow,
+          cursor: clickable ? 'pointer' : 'default',
           transition: 'box-shadow 300ms ease, border-color 300ms ease'
         }}
       >
@@ -195,10 +212,13 @@ const TickStrip = ({ format, small }: { format: (i: number) => string; small?: b
  * a probe runs on its own lane; once everything settles the sequence resets and loops.
  */
 export const TimelineCanvas = memo(function TimelineCanvas({
-  onStatusChange
+  onStatusChange,
+  onSelectNode
 }: {
   /** Reports the overall timeline status as the run completes and loops. */
   onStatusChange?: (status: 'running' | 'completed') => void
+  /** Fired with a node id when a settled node is clicked. */
+  onSelectNode?: (id: string) => void
 }) {
   const [runId, setRunId] = useState(0)
   const [showSecondFault, setShowSecondFault] = useState(false)
@@ -245,6 +265,7 @@ export const TimelineCanvas = memo(function TimelineCanvas({
               finalStatus="completed"
               icon={<FaultIcon />}
               onComplete={handleFirstFaultComplete}
+              onSelect={onSelectNode && (() => onSelectNode('nginx-pod-delete'))}
             />
             {showSecondFault && (
               <AnimatedNode
@@ -254,6 +275,7 @@ export const TimelineCanvas = memo(function TimelineCanvas({
                 footerLabel="Fault"
                 finalStatus="error"
                 icon={<FaultIcon />}
+                onSelect={onSelectNode && (() => onSelectNode('node-cpu-hog'))}
               />
             )}
           </div>
@@ -269,6 +291,7 @@ export const TimelineCanvas = memo(function TimelineCanvas({
             finalStatus="completed"
             icon={<ProbeIcon />}
             onComplete={handleProbeComplete}
+            onSelect={onSelectNode && (() => onSelectNode('system-inline-probe'))}
           />
         </Lane>
 

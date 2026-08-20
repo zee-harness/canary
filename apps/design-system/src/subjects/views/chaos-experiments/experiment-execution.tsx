@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
+import { NODE_DETAILS, NodeLogsDrawer } from './experiment-node-drawer'
 import { RUN_DURATION_SECONDS, RunningBadge, TimelineCanvas } from './experiment-timeline'
 
 const formatDuration = (totalSeconds: number) => {
@@ -20,6 +21,7 @@ const InfoItem = ({ label, children }: { label: string; children: ReactNode }) =
 export const ExperimentExecutionView = () => {
   const [activeTab, setActiveTab] = useState('timeline')
   const [timelineStatus, setTimelineStatus] = useState<'running' | 'completed'>('running')
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const statusRef = useRef(timelineStatus)
   statusRef.current = timelineStatus
@@ -110,8 +112,13 @@ export const ExperimentExecutionView = () => {
         className="min-h-0 flex-1 overflow-auto"
         style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-2))' }}
       >
-        <TimelineCanvas onStatusChange={setTimelineStatus} />
+        <TimelineCanvas onStatusChange={setTimelineStatus} onSelectNode={setSelectedNodeId} />
       </div>
+
+      <NodeLogsDrawer
+        detail={selectedNodeId ? NODE_DETAILS[selectedNodeId] : null}
+        onClose={() => setSelectedNodeId(null)}
+      />
     </div>
   )
 }
