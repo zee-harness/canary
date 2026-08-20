@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import {
   AnyContainerNodeType,
@@ -856,6 +857,7 @@ const AddStepDrawer = ({
 }
 
 export const ChaosStudioView = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('studio')
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
@@ -932,7 +934,7 @@ export const ChaosStudioView = () => {
           </Tabs.List>
         </Tabs.Root>
 
-        <Button size="sm">
+        <Button size="sm" onClick={() => navigate('/view-preview/chaos-experiments/executions')}>
           <IconV2 name="play-solid" />
           Run
         </Button>
