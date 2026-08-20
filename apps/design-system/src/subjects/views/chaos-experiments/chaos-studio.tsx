@@ -179,8 +179,8 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
               variant="ghost"
               size="xs"
               iconOnly
+              ignoreIconOnlyTooltip
               aria-label="More"
-              tooltipProps={{ content: 'More' }}
               onClick={e => e.stopPropagation()}
             >
               <IconV2 name="more-horizontal" />
