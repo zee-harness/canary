@@ -44,12 +44,14 @@ const AddStepContext = createContext<{
   onAddParallel: (nodeName: string) => void
   onAddSequential: (nodeName: string) => void
   onExtend: (nodeName: string) => void
+  onRetract: (nodeName: string) => void
 }>({
   selected: false,
   onOpen: () => undefined,
   onAddParallel: () => undefined,
   onAddSequential: () => undefined,
-  onExtend: () => undefined
+  onExtend: () => undefined,
+  onRetract: () => undefined
 })
 
 // --- Graph node content components (reuse the pipeline studio nodes) ------------------------
@@ -107,11 +109,13 @@ interface StepNodeData {
   lines: string[]
   /** True when this node is the sole step of its parallel lane and can absorb the next stage. */
   extendable?: boolean
+  /** True when this node's parallel lane spans a sibling chain it can release a stage back out of. */
+  retractable?: boolean
 }
 
 function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> }) {
-  const { name, icon, lines, extendable } = node.data
-  const { onAddParallel, onAddSequential, onExtend } = useContext(AddStepContext)
+  const { name, icon, lines, extendable, retractable } = node.data
+  const { onAddParallel, onAddSequential, onExtend, onRetract } = useContext(AddStepContext)
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -208,24 +212,25 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
         </Button>
       </div>
 
-      {/* floating right-edge control — appears on hover to the right of the node.
-          A spanning-eligible node (sole step of its parallel lane) shows an "extend" handle
-          that pulls the next stage into the sibling lane; otherwise the add-sequential "+". */}
+      {/* floating right-edge controls — appear on hover, stacked so the span (extend/retract)
+          handles never hide the add-sequential "+". Extend/retract only show for a node that is
+          the sole step of its parallel lane; the "+" (add a stage after the group) is always there. */}
       <div
-        className="flex items-center"
+        className="flex flex-col items-center"
         style={{
           position: 'absolute',
           left: '100%',
           top: '50%',
           transform: 'translateY(-50%)',
           paddingLeft: 10,
+          gap: 6,
           zIndex: 20,
           opacity: hovered ? 1 : 0,
           pointerEvents: hovered ? 'auto' : 'none',
           transition: 'opacity 150ms ease'
         }}
       >
-        {extendable ? (
+        {extendable && (
           <Button
             variant="outline"
             size="sm"
@@ -239,25 +244,41 @@ function StepContentNode({ node }: { node: LeafNodeInternalType<StepNodeData> })
               onExtend(name)
             }}
           >
-            <IconV2 name="arrows-leftright" />
+            <IconV2 name="fast-arrow-right" />
           </Button>
-        ) : (
+        )}
+        {retractable && (
           <Button
             variant="outline"
             size="sm"
             iconOnly
             rounded
-            aria-label="Add sequential step"
-            tooltipProps={{ content: 'Add', side: 'top' }}
+            aria-label="Retract to stop running in parallel"
+            tooltipProps={{ content: 'Stop running in parallel', side: 'top' }}
             style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
             onClick={event => {
               event.stopPropagation()
-              onAddSequential(name)
+              onRetract(name)
             }}
           >
-            <IconV2 name="plus" />
+            <IconV2 name="fast-arrow-left" />
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          iconOnly
+          rounded
+          aria-label="Add sequential step"
+          tooltipProps={{ content: 'Add', side: 'top' }}
+          style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
+          onClick={event => {
+            event.stopPropagation()
+            onAddSequential(name)
+          }}
+        >
+          <IconV2 name="plus" />
+        </Button>
       </div>
     </div>
   )
@@ -319,10 +340,16 @@ const laneWidth = (len: number) => 2 * SERIAL_PADDING + len * STEP_WIDTH + (len 
 
 const stepToNode = (
   step: StepDef,
-  opts?: { width?: number; extendable?: boolean }
+  opts?: { width?: number; extendable?: boolean; retractable?: boolean }
 ): AnyContainerNodeType => ({
   type: ChaosNodeType.PodDelete,
-  data: { name: step.name, icon: step.icon, lines: step.lines, extendable: !!opts?.extendable },
+  data: {
+    name: step.name,
+    icon: step.icon,
+    lines: step.lines,
+    extendable: !!opts?.extendable,
+    retractable: !!opts?.retractable
+  },
   config: { width: opts?.width ?? STEP_WIDTH, height: STEP_HEIGHT }
 })
 
@@ -386,13 +413,16 @@ const buildGraphData = (slots: StepSlot[]): AnyContainerNodeType[] => {
       type: ChaosNodeType.Parallel,
       data: {},
       config: { minWidth: STEP_WIDTH, minHeight: STEP_HEIGHT },
-      children: slot.branches.map(branch => {
+      children: slot.branches.map((branch, bi) => {
         if (branch.length > 1) return branchToNode(branch)
-        // A single-step lane: stretch it to span the longer sibling lane, and mark it
-        // extendable when it's (one of) the shortest lane(s) and there's a stage to absorb.
+        // A single-step lane: stretch it to span the longer sibling lane. It's extendable when
+        // it's (one of) the shortest lane(s) with a following stage to absorb, and retractable
+        // when its sibling lane is a chain it can release the last stage back out of.
+        const siblingMax = Math.max(0, ...slot.branches.filter((_, j) => j !== bi).map(b => b.length))
         return stepToNode(branch[0], {
           width: maxLen > 1 ? laneWidth(maxLen) : undefined,
-          extendable: canAbsorb && branch.length === minLen
+          extendable: canAbsorb && branch.length === minLen,
+          retractable: slot.branches.length === 2 && siblingMax > 1
         })
       })
     }
@@ -983,6 +1013,25 @@ export const ChaosStudioView = () => {
     })
   }
 
+  // "Retract": the inverse of extend. The clicked node's lane stays put; the last stage of its
+  // sibling chain is released back out into a standalone sequential slot after the group.
+  const retractStep = (nodeName: string) => {
+    setSteps(prev => {
+      const idx = prev.findIndex(slot => slot.kind === 'parallel' && slotHasName(slot, nodeName))
+      const slot = prev[idx]
+      if (!slot || slot.kind !== 'parallel' || slot.branches.length !== 2) return prev
+      const siblingIdx = slot.branches.findIndex(branch => !branch.some(step => step.name === nodeName))
+      const sibling = slot.branches[siblingIdx]
+      if (!sibling || sibling.length < 2) return prev
+      const released = sibling[sibling.length - 1]
+      const branches = slot.branches.map((branch, j) => (j === siblingIdx ? branch.slice(0, -1) : branch))
+      const nextSlots = [...prev]
+      nextSlots[idx] = { kind: 'parallel', branches }
+      nextSlots.splice(idx + 1, 0, { kind: 'single', step: released })
+      return nextSlots
+    })
+  }
+
   return (
     <AddStepContext.Provider
       value={{
@@ -990,7 +1039,8 @@ export const ChaosStudioView = () => {
         onOpen: () => openDrawer('initial', null),
         onAddParallel: nodeName => openDrawer('parallel', nodeName),
         onAddSequential: nodeName => openDrawer('sequential', nodeName),
-        onExtend: extendStep
+        onExtend: extendStep,
+        onRetract: retractStep
       }}
     >
     <div className="flex h-full flex-col">
