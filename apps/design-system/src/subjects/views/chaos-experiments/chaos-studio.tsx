@@ -193,6 +193,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           rounded
           aria-label="Add parallel step"
           tooltipProps={{ content: 'Add', side: 'top' }}
+          style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
           onClick={event => {
             event.stopPropagation()
             onAddParallel()
@@ -223,6 +224,7 @@ function PodDeleteStepContentNode({ node }: { node: LeafNodeInternalType<PodDele
           rounded
           aria-label="Add sequential step"
           tooltipProps={{ content: 'Add', side: 'top' }}
+          style={{ backgroundColor: 'var(--cn-comp-pipeline-bg, var(--cn-bg-1))' }}
           onClick={event => {
             event.stopPropagation()
             onAddSequential()
