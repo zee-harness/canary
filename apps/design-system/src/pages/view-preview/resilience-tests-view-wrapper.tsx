@@ -68,6 +68,7 @@ const ResilienceTestsSidebar = ({
           />
           <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/load-tests`} title="Load Tests" />
           <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/dr-testing`} title="DR Testing" />
+          <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/usage`} title="Resilience Test Usage" />
           <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/settings`} title="Settings" />
         </Sidebar.Item>
       </Sidebar.Group>

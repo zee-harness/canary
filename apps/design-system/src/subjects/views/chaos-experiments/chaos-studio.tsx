@@ -1,5 +1,5 @@
 import { createContext, type MouseEvent as ReactMouseEvent, type ReactNode, useContext, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
   AnyContainerNodeType,
@@ -1052,12 +1052,27 @@ const AddStepDrawer = ({
   )
 }
 
+// The graph of the previously-run experiment, shown when arriving from an execution's
+// "View experiment": pod-delete-538a → pod-delete-6b2c on top, system-inline-probe spanning below.
+const executedExperimentSteps = (): StepSlot[] => [
+  {
+    kind: 'parallel',
+    branches: [
+      [makeStep('fault', 0), makeStep('fault', 1)],
+      [makeStep('probe', 2)]
+    ]
+  }
+]
+
 export const ChaosStudioView = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState('studio')
   const [view, setView] = useState<VisualYamlValue>('visual')
   const [addStepOpen, setAddStepOpen] = useState(false)
-  const [steps, setSteps] = useState<StepSlot[]>([])
+  const [steps, setSteps] = useState<StepSlot[]>(() =>
+    (location.state as { fromExecution?: boolean } | null)?.fromExecution ? executedExperimentSteps() : []
+  )
   // How the drawer was opened + which node's control triggered it (for add-stage / parallel targeting).
   const [pendingAdd, setPendingAdd] = useState<'initial' | 'parallel' | 'sequential' | 'sequential-before'>('initial')
   const [pendingTarget, setPendingTarget] = useState<string | null>(null)

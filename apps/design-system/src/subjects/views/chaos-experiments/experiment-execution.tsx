@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button, IconV2, MoreActionsTooltip, StatusBadge, Tabs, Text } from '@harnessio/ui/components'
 
@@ -19,6 +20,7 @@ const InfoItem = ({ label, children }: { label: string; children: ReactNode }) =
 )
 
 export const ExperimentExecutionView = () => {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('timeline')
   const [timelineStatus, setTimelineStatus] = useState<'running' | 'completed'>('running')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -71,7 +73,12 @@ export const ExperimentExecutionView = () => {
               <IconV2 name="stop-solid" />
               Abort
             </Button>
-            <Button size="sm">View experiment</Button>
+            <Button
+              size="sm"
+              onClick={() => navigate('/view-preview/chaos-experiments/studio', { state: { fromExecution: true } })}
+            >
+              View experiment
+            </Button>
           </div>
         </div>
 
