@@ -19,7 +19,7 @@ interface PanelProps {
 
 /** Bordered dashboard section with an optional title / description / right-aligned actions. */
 const Panel = ({ title, description, actions, children, style }: PanelProps) => (
-  <section className="border-cn-2 bg-cn-1 rounded-md border" style={{ padding: 20, ...style }}>
+  <section className="border-cn-2 bg-cn-1 border" style={{ padding: 20, borderRadius: 16, ...style }}>
     {(title || actions) && (
       <div className="flex items-start justify-between" style={{ gap: 16, marginBottom: 16 }}>
         <div className="flex flex-col" style={{ gap: 2 }}>
@@ -456,8 +456,8 @@ export const ResilienceUsageView: React.FC = () => {
             {HERO_STATS.map(stat => (
               <div
                 key={stat.label}
-                className="border-cn-2 bg-cn-1 rounded-md border"
-                style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}
+                className="border-cn-2 bg-cn-1 border"
+                style={{ padding: 16, borderRadius: 16, display: 'flex', flexDirection: 'column', gap: 4 }}
               >
                 <Text variant="heading-hero" color={stat.accent === 'danger' ? 'danger' : stat.accent === 'success' ? 'success' : 'foreground-1'}>
                   {stat.value}
@@ -479,19 +479,22 @@ export const ResilienceUsageView: React.FC = () => {
             title="Pipeline Explorer"
             description="RT maturity, findings and last-scan freshness for pipelines that have run at least one scan."
           >
-            <DataTable<PipelineRow>
-              columns={columns}
-              data={PIPELINES}
-              size="compact"
-              getRowId={row => row.id}
-              paginationProps={{
-                currentPage: 1,
-                pageSize: 6,
-                totalItems: 42,
-                goToPage: () => {},
-                onPageSizeChange: () => {}
-              }}
-            />
+            {/* Bump the table container radius via its CSS var (inherits into cn-table-v2-container). */}
+            <div style={{ '--cn-table-radius': 'var(--cn-rounded-6)' } as CSSProperties}>
+              <DataTable<PipelineRow>
+                columns={columns}
+                data={PIPELINES}
+                size="compact"
+                getRowId={row => row.id}
+                paginationProps={{
+                  currentPage: 1,
+                  pageSize: 6,
+                  totalItems: 42,
+                  goToPage: () => {},
+                  onPageSizeChange: () => {}
+                }}
+              />
+            </div>
           </Panel>
 
           {/* Trends */}
@@ -548,8 +551,8 @@ export const ResilienceUsageView: React.FC = () => {
                       .map(team => (
                         <div
                           key={team.name}
-                          className="flex flex-col justify-between rounded-md"
-                          style={{ ...coverageCellStyle(team.pct), width: 148, height: 56, padding: 10 }}
+                          className="flex flex-col justify-between"
+                          style={{ ...coverageCellStyle(team.pct), width: 148, height: 56, padding: 10, borderRadius: 12 }}
                         >
                           <Text variant="caption-normal" color="foreground-1" truncate>
                             {team.name}
@@ -583,7 +586,7 @@ export const ResilienceUsageView: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-cn-2 mt-4 flex items-center justify-between rounded-md" style={{ padding: '10px 12px', gap: 16 }}>
+            <div className="bg-cn-2 mt-4 flex items-center justify-between" style={{ padding: '10px 12px', gap: 16, borderRadius: 12 }}>
               <Text variant="caption-normal" color="foreground-2">
                 263 projects (60%) have never been scanned.
               </Text>
@@ -630,8 +633,8 @@ export const ResilienceUsageView: React.FC = () => {
                   {MATURITY_FUNNEL.map(step => (
                     <div
                       key={step.label}
-                      className="border-cn-2 bg-cn-2 flex flex-col items-center justify-center rounded-md border"
-                      style={{ padding: '12px 6px', gap: 4 }}
+                      className="border-cn-2 bg-cn-2 flex flex-col items-center justify-center border"
+                      style={{ padding: '12px 6px', gap: 4, borderRadius: 12 }}
                     >
                       <Text variant="heading-base" color="foreground-1">
                         {step.value}
@@ -686,7 +689,8 @@ export const ResilienceUsageView: React.FC = () => {
 
           {/* Situations Worth Flagging */}
           <Panel title="Situations Worth Flagging">
-            <div className="flex flex-col" style={{ gap: 12 }}>
+            {/* Bump the alert radius via its CSS var so the flag cards match the panels. */}
+            <div className="flex flex-col" style={{ gap: 12, '--cn-alert-radius': 'var(--cn-rounded-5)' } as CSSProperties}>
               {FLAGS.map(flag => (
                 <Alert.Root key={flag.title} theme={flag.theme}>
                   <Alert.Title>{flag.title}</Alert.Title>
