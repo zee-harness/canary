@@ -586,7 +586,16 @@ export const ResilienceUsageView: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-cn-2 mt-4 flex items-center justify-between" style={{ padding: '10px 12px', gap: 16, borderRadius: 12 }}>
+            <div
+              className="mt-4 flex items-center justify-between border"
+              style={{
+                padding: '10px 12px',
+                gap: 16,
+                borderRadius: 12,
+                backgroundColor: 'var(--cn-set-warning-outline-bg)',
+                borderColor: 'var(--cn-set-warning-outline-border)'
+              }}
+            >
               <Text variant="caption-normal" color="foreground-2">
                 263 projects (60%) have never been scanned.
               </Text>
