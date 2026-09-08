@@ -587,10 +587,11 @@ export const ResilienceUsageView: React.FC = () => {
             </div>
 
             <div
-              className="mt-4 flex items-center justify-between border"
+              className="flex items-center justify-between border"
               style={{
                 padding: '10px 12px',
                 gap: 16,
+                marginTop: 28,
                 borderRadius: 12,
                 backgroundColor: 'var(--cn-set-warning-outline-bg)',
                 borderColor: 'var(--cn-set-warning-outline-border)'
