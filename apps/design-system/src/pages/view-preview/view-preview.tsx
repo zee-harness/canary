@@ -15,6 +15,7 @@ import ChaosExperimentsView from '@subjects/views/chaos-experiments/chaos-experi
 import { ChaosStudioView } from '@subjects/views/chaos-experiments/chaos-studio'
 import { ExperimentExecutionView } from '@subjects/views/chaos-experiments/experiment-execution'
 import { ResilienceOverview } from '@subjects/views/chaos-experiments/resilience-overview'
+import { ResilienceUsageView } from '@subjects/views/chaos-experiments/resilience-usage'
 import DraggableCardsDemo from '@subjects/views/draggable-cards-demo'
 import ExecutionListWrapper from '@subjects/views/execution-list/execution-list'
 import GaugeDemo from '@subjects/views/gauge-demo'
@@ -383,6 +384,14 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
             childrenWrapperClassName="flex flex-col"
           >
             <ChaosStudioView />
+          </ResilienceTestsViewWrapper>
+        )
+      },
+      'chaos-experiments/usage': {
+        label: 'Resilience Test Usage',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="usage">
+            <ResilienceUsageView />
           </ResilienceTestsViewWrapper>
         )
       }

@@ -4,7 +4,7 @@ import { Breadcrumb, HarnessLogo, IconV2, Sidebar, Text, useSidebar } from '@har
 
 import { AppViewWrapper, AppViewWrapperProps } from './app-view-wrapper'
 
-type ResilienceNav = 'overview' | 'chaos-experiments'
+type ResilienceNav = 'overview' | 'chaos-experiments' | 'usage'
 
 const OVERVIEW_ROUTE = '/view-preview/overview'
 const CHAOS_ROUTE = '/view-preview/chaos-experiments'
@@ -97,6 +97,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
   leaf
 }) => {
   const isChaos = activeNav === 'chaos-experiments'
+  const isUsage = activeNav === 'usage'
   const hasLeaf = Boolean(leaf)
 
   return (
@@ -117,12 +118,20 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
           <Breadcrumb.Root className="select-none">
             <Breadcrumb.List>
               <Breadcrumb.Item>
-                {isChaos ? (
+                {isChaos || isUsage ? (
                   <Breadcrumb.Link href="#">Resilience Testing</Breadcrumb.Link>
                 ) : (
                   <Breadcrumb.Page>Resilience Testing</Breadcrumb.Page>
                 )}
               </Breadcrumb.Item>
+              {isUsage && (
+                <>
+                  <Breadcrumb.Separator />
+                  <Breadcrumb.Item>
+                    <Breadcrumb.Page>Resilience Test Usage</Breadcrumb.Page>
+                  </Breadcrumb.Item>
+                </>
+              )}
               {isChaos && (
                 <>
                   <Breadcrumb.Separator />
