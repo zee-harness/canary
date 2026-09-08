@@ -567,7 +567,7 @@ export const ResilienceUsageView: React.FC = () => {
               ))}
             </div>
 
-            <div className="border-cn-2 mt-4 flex items-center border-t pt-4" style={{ gap: 16 }}>
+            <div className="border-cn-2 flex items-center border-t pt-4" style={{ gap: 16, marginTop: 28 }}>
               <Text variant="caption-normal" color="foreground-3">
                 Per-project scan coverage
               </Text>
