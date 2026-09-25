@@ -1346,7 +1346,7 @@ export const ChaosStudioView = () => {
           </Tabs.List>
         </Tabs.Root>
 
-        <Button size="sm" onClick={() => navigate('/view-preview/chaos-experiments/executions')}>
+        <Button size="sm" onClick={() => navigate('/view-preview/resilience-tests/chaos-experiments/executions')}>
           <IconV2 name="play-solid" />
           Run
         </Button>

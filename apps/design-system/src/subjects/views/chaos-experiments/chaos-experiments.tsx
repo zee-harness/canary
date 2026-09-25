@@ -266,7 +266,7 @@ export const ChaosExperimentsView: React.FC = () => {
               : {
                   icon: 'play-solid',
                   label: 'Run experiment',
-                  onClick: () => navigate('/view-preview/chaos-experiments/executions')
+                  onClick: () => navigate('/view-preview/resilience-tests/chaos-experiments/executions')
                 }
 
           return (

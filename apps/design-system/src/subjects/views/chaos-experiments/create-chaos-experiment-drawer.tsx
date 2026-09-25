@@ -27,7 +27,7 @@ export const CreateChaosExperimentDrawer: React.FC<CreateChaosExperimentDrawerPr
   // Selecting env + infra and submitting drops the user into the Chaos Studio.
   const handleSubmit = () => {
     onOpenChange(false)
-    navigate('/view-preview/chaos-experiments/studio')
+    navigate('/view-preview/resilience-tests/chaos-experiments/studio')
   }
 
   const handleSelectEnvironment = (env: EnvironmentOption) => {

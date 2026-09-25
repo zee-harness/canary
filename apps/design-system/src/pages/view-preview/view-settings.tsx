@@ -39,7 +39,7 @@ const ViewSettings: FC<ViewSettingsProps> = ({ routes }) => {
   const { pathname } = useLocation()
 
   const currentView = useMemo<string>(
-    () => pathname.match(/view-preview\/([^/]+)/)?.[1] || routes[0],
+    () => pathname.match(/view-preview\/(.+)/)?.[1] || routes[0],
     [pathname, routes]
   )
 

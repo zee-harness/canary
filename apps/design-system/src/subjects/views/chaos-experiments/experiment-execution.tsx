@@ -75,7 +75,7 @@ export const ExperimentExecutionView = () => {
             </Button>
             <Button
               size="sm"
-              onClick={() => navigate('/view-preview/chaos-experiments/studio', { state: { fromExecution: true } })}
+              onClick={() => navigate('/view-preview/resilience-tests/chaos-experiments/studio', { state: { fromExecution: true } })}
             >
               View experiment
             </Button>

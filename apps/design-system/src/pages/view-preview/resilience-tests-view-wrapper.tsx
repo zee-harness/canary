@@ -6,8 +6,8 @@ import { AppViewWrapper, AppViewWrapperProps } from './app-view-wrapper'
 
 type ResilienceNav = 'overview' | 'chaos-experiments' | 'usage'
 
-const OVERVIEW_ROUTE = '/view-preview/overview'
-const CHAOS_ROUTE = '/view-preview/chaos-experiments'
+const OVERVIEW_ROUTE = '/view-preview/resilience-tests/overview'
+const CHAOS_ROUTE = '/view-preview/resilience-tests/chaos-experiments'
 
 const ResilienceTestsSidebar = ({
   activeNav,
@@ -56,7 +56,7 @@ const ResilienceTestsSidebar = ({
       <Sidebar.Group label="Recent">
         <Sidebar.Item icon="chaos-tests" title="Resilience Tests" defaultSubmenuOpen>
           <Sidebar.MenuSubItem to={OVERVIEW_ROUTE} end active={activeNav === 'overview'} title="Overview" />
-          <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/insights`} title="Insights" />
+          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/insights" title="Insights" />
           <Sidebar.MenuSubItem
             to={CHAOS_ROUTE}
             end
@@ -66,10 +66,10 @@ const ResilienceTestsSidebar = ({
             className={chaosLeafActive ? 'active' : undefined}
             title="Chaos Experiments"
           />
-          <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/load-tests`} title="Load Tests" />
-          <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/dr-testing`} title="DR Testing" />
-          <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/usage`} title="Resilience Test Usage" />
-          <Sidebar.MenuSubItem to={`${CHAOS_ROUTE}/settings`} title="Settings" />
+          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/load-tests" title="Load Tests" />
+          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/dr-tests" title="DR Testing" />
+          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/usage" title="Resilience Test Usage" />
+          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/settings" title="Settings" />
         </Sidebar.Item>
       </Sidebar.Group>
     </Sidebar.Content>

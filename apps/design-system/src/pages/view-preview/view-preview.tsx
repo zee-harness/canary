@@ -351,7 +351,7 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
   resilienceTesting: {
     label: 'Resilience Testing',
     items: {
-      overview: {
+      'resilience-tests/overview': {
         label: 'Overview',
         element: (
           <ResilienceTestsViewWrapper activeNav="overview">
@@ -359,7 +359,7 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
           </ResilienceTestsViewWrapper>
         )
       },
-      'chaos-experiments': {
+      'resilience-tests/chaos-experiments': {
         label: 'Chaos Experiments',
         element: (
           <ResilienceTestsViewWrapper activeNav="chaos-experiments">
@@ -367,7 +367,7 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
           </ResilienceTestsViewWrapper>
         )
       },
-      'chaos-experiments/executions': {
+      'resilience-tests/chaos-experiments/executions': {
         label: 'Experiment Execution',
         element: (
           <ResilienceTestsViewWrapper activeNav="chaos-experiments" leaf="nginx-pod-delete-test">
@@ -375,7 +375,7 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
           </ResilienceTestsViewWrapper>
         )
       },
-      'chaos-experiments/studio': {
+      'resilience-tests/chaos-experiments/studio': {
         label: 'Chaos Studio',
         element: (
           <ResilienceTestsViewWrapper
@@ -387,7 +387,7 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
           </ResilienceTestsViewWrapper>
         )
       },
-      'chaos-experiments/usage': {
+      'resilience-tests/usage': {
         label: 'Resilience Test Usage',
         element: (
           <ResilienceTestsViewWrapper activeNav="usage">
