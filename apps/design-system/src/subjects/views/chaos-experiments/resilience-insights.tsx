@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   DataTable,
+  Drawer,
   DropdownMenu,
   IconV2,
   ListActions,
@@ -14,6 +15,7 @@ import {
   MoreActionsTooltip,
   SearchInput,
   Spacer,
+  StatusBadge,
   Tabs,
   Text
 } from '@harnessio/ui/components'
@@ -58,6 +60,7 @@ const RISK_COLORS = {
 interface ServiceAtRisk {
   name: string
   namespace: string
+  infrastructure: string
   total: number
   critical: number
   high: number
@@ -66,10 +69,233 @@ interface ServiceAtRisk {
 }
 
 const servicesAtRisk: ServiceAtRisk[] = [
-  { name: 'cart-service', namespace: 'default', total: 10, critical: 3, high: 2, medium: 3, low: 2 },
-  { name: 'accounts-db', namespace: 'default', total: 7, critical: 2, high: 1, medium: 2, low: 2 },
-  { name: 'payment-service', namespace: 'default', total: 7, critical: 2, high: 1, medium: 2, low: 2 }
+  {
+    name: 'cart-service',
+    namespace: 'default',
+    infrastructure: 'chaos-k8-infra',
+    total: 10,
+    critical: 3,
+    high: 2,
+    medium: 3,
+    low: 2
+  },
+  {
+    name: 'accounts-db',
+    namespace: 'default',
+    infrastructure: 'chaos-k8-infra',
+    total: 7,
+    critical: 2,
+    high: 1,
+    medium: 2,
+    low: 2
+  },
+  {
+    name: 'payment-service',
+    namespace: 'default',
+    infrastructure: 'chaos-k8-infra',
+    total: 7,
+    critical: 2,
+    high: 1,
+    medium: 2,
+    low: 2
+  }
 ]
+
+type RiskSeverity = 'critical' | 'high' | 'medium' | 'low'
+
+interface RiskFinding {
+  title: string
+  source: string
+  detected: string
+  description: string
+  experiment: string
+}
+
+const FINDINGS: Record<RiskSeverity, RiskFinding[]> = {
+  critical: [
+    {
+      title: 'Single Pod Replica',
+      source: 'pipeline scan',
+      detected: '2 days ago',
+      description:
+        'Detects workloads running with a single replica, making them a single point of failure with zero tolerance for pod-level disruptions.',
+      experiment: 'pod-delete'
+    },
+    {
+      title: 'Missing Liveness or Readiness Probes',
+      source: 'pipeline scan',
+      detected: '2 days ago',
+      description:
+        'Detects containers without liveness or readiness probes, causing Kubernetes to route traffic to unhealthy pods and never restart stuck ones.',
+      experiment: 'pod-cpu-hog'
+    },
+    {
+      title: 'Host Namespace Sharing',
+      source: 'pipeline scan',
+      detected: '2 days ago',
+      description:
+        'Detects pods using hostNetwork, hostPID, or hostIPC, which share the host node’s network stack, process tree, or IPC namespace.',
+      experiment: 'pod-delete'
+    }
+  ],
+  high: [
+    {
+      title: 'Aggressive Rolling Update Configuration',
+      source: 'pipeline scan',
+      detected: '2 days ago',
+      description:
+        'Detects Deployments with maxUnavailable greater than zero combined with small replica counts, causing capacity loss during every rolling update.',
+      experiment: 'pod-delete'
+    },
+    {
+      title: 'No Pod Disruption Budget',
+      source: 'infrastructure scan',
+      detected: '5 days ago',
+      description: 'Detects workloads that can be evicted without a minimum availability guarantee during node drains.',
+      experiment: 'pod-delete'
+    }
+  ],
+  medium: [
+    {
+      title: 'Unbounded CPU Requests',
+      source: 'pipeline scan',
+      detected: '1 week ago',
+      description: 'Detects containers without CPU requests, so the scheduler cannot reserve capacity for the workload.',
+      experiment: 'pod-cpu-hog'
+    },
+    {
+      title: 'Missing Memory Limits',
+      source: 'pipeline scan',
+      detected: '1 week ago',
+      description: 'Detects containers that can grow without a memory limit and be OOMKilled under load.',
+      experiment: 'pod-memory-hog'
+    },
+    {
+      title: 'Shared EmptyDir Volume',
+      source: 'infrastructure scan',
+      detected: '3 days ago',
+      description: 'Detects pods that share writable emptyDir volumes across containers without an isolation boundary.',
+      experiment: 'pod-delete'
+    }
+  ],
+  low: [
+    {
+      title: 'No Network Policy',
+      source: 'infrastructure scan',
+      detected: '1 week ago',
+      description: 'Detects namespaces where workloads accept traffic from any pod because no NetworkPolicy is applied.',
+      experiment: 'pod-network-loss'
+    },
+    {
+      title: 'Latest Image Tag',
+      source: 'pipeline scan',
+      detected: '4 days ago',
+      description: 'Detects containers pinned to the latest tag, so a reschedule can pull an untested image.',
+      experiment: 'pod-delete'
+    }
+  ]
+}
+
+const SEVERITY_THEME: Record<RiskSeverity, 'danger' | 'warning' | 'info'> = {
+  critical: 'danger',
+  high: 'warning',
+  medium: 'warning',
+  low: 'info'
+}
+
+const findingsFor = (service: ServiceAtRisk) =>
+  (['critical', 'high', 'medium', 'low'] as const).flatMap(severity =>
+    FINDINGS[severity].slice(0, service[severity]).map(finding => ({ ...finding, severity }))
+  )
+
+const ServiceRiskDrawer = ({
+  service,
+  open,
+  onOpenChange
+}: {
+  service: ServiceAtRisk | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) => {
+  const [severity, setSeverity] = useState<RiskSeverity | 'all'>('all')
+  const findings = service ? findingsFor(service) : []
+  const visible = severity === 'all' ? findings : findings.filter(finding => finding.severity === severity)
+
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+      <Drawer.Content size="md">
+        <Drawer.Header logo="harness">
+          <Drawer.Title>{service?.name}</Drawer.Title>
+          <Drawer.Description>
+            {service ? `${service.infrastructure} / ${service.namespace}` : ''}
+          </Drawer.Description>
+        </Drawer.Header>
+        <Drawer.Body>
+          {service && (
+            <div className="flex flex-col" style={{ gap: 16 }}>
+              <div className="flex flex-wrap items-center justify-between" style={{ gap: 12 }}>
+                <Text variant="heading-base">Total risks: {service.total}</Text>
+                <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+                  {(['critical', 'high', 'medium', 'low'] as const).map(level => (
+                    <Button
+                      key={level}
+                      size="sm"
+                      variant={severity === level ? 'secondary' : 'outline'}
+                      onClick={() => setSeverity(current => (current === level ? 'all' : level))}
+                    >
+                      <span
+                        className="inline-block rounded-full"
+                        style={{ width: 8, height: 8, backgroundColor: RISK_COLORS[level] }}
+                      />
+                      {level[0].toUpperCase() + level.slice(1)} ({service[level]})
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {visible.map(finding => (
+                <Card.Root key={`${finding.severity}-${finding.title}`}>
+                  <Card.Content className="flex flex-col" style={{ gap: 8 }}>
+                    <div className="flex items-center" style={{ gap: 8 }}>
+                      <StatusBadge variant="secondary" theme={SEVERITY_THEME[finding.severity]} size="sm">
+                        {finding.severity}
+                      </StatusBadge>
+                      <Text variant="body-strong" color="foreground-1">
+                        {finding.title}
+                      </Text>
+                      <IconV2 name="open-new-window" size="xs" className="text-cn-3" />
+                    </div>
+                    <Text variant="caption-normal" color="foreground-3">
+                      Passive: last detected in {finding.source}, {finding.detected}
+                    </Text>
+                    <Text variant="body-normal" color="foreground-2">
+                      {finding.description}
+                    </Text>
+                    <div
+                      className="flex items-center justify-between"
+                      style={{ gap: 12, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--cn-border-2)' }}
+                    >
+                      <div className="flex items-center" style={{ gap: 8 }}>
+                        <IconV2 name="sparks" size="sm" color="info" />
+                        <Text variant="body-single-line-normal" color="foreground-1">
+                          Recommended: Create a {finding.experiment} experiment
+                        </Text>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <IconV2 name="plus" />
+                        Create
+                      </Button>
+                    </div>
+                  </Card.Content>
+                </Card.Root>
+              ))}
+            </div>
+          )}
+        </Drawer.Body>
+      </Drawer.Content>
+    </Drawer.Root>
+  )
+}
 
 const RISK_SUMMARY = [
   { label: 'Total risks', value: 218 },
@@ -91,6 +317,7 @@ const RiskCount = ({ value, label, color }: { value: number; label: string; colo
 
 const InsightsRisks = () => {
   const [tab, setTab] = useState<'summary' | 'risks'>('summary')
+  const [selectedService, setSelectedService] = useState<ServiceAtRisk | null>(null)
 
   const columns = useMemo<ColumnDef<ServiceAtRisk>[]>(
     () => [
@@ -139,9 +366,9 @@ const InsightsRisks = () => {
         header: '',
         enableSorting: false,
         size: 140,
-        cell: () => (
+        cell: ({ row }) => (
           <div className="flex justify-end">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setSelectedService(row.original)}>
               <IconV2 name="eye" />
               View details
             </Button>
@@ -180,6 +407,14 @@ const InsightsRisks = () => {
           <Text variant="body-strong">Top services at risk</Text>
           <Spacer size={4} />
           <DataTable<ServiceAtRisk> columns={columns} data={servicesAtRisk} size="compact" getRowId={row => row.name} />
+          <ServiceRiskDrawer
+            key={selectedService?.name ?? 'closed'}
+            service={selectedService}
+            open={selectedService !== null}
+            onOpenChange={open => {
+              if (!open) setSelectedService(null)
+            }}
+          />
         </>
       ) : (
         <Text color="foreground-3">No individual risks yet.</Text>
