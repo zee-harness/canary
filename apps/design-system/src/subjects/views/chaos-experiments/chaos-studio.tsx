@@ -397,7 +397,7 @@ const nodes: NodeContent[] = [
 ]
 
 // A configured step: its display name, chip icon, and footer summary lines.
-type StepKind = 'fault' | 'probe'
+type StepKind = 'fault' | 'cpu-hog' | 'probe'
 interface StepDef {
   name: string
   icon: IconV2NamesType
@@ -408,9 +408,11 @@ const STEP_SUFFIXES = ['538a', '6b2c', '7a3d', '9f2h', 'a1b2', 'c3d4']
 
 const makeStep = (kind: StepKind, index: number): StepDef => {
   const suffix = STEP_SUFFIXES[index % STEP_SUFFIXES.length]
-  return kind === 'probe'
-    ? { name: `system-inline-probe-${suffix}`, icon: 'rt-probe', lines: ['Timeout: 10s', 'Interval: 2s'] }
-    : { name: `pod-delete-${suffix}`, icon: 'chaos-fault', lines: ['Duration: 30s', 'Interval: 10s'] }
+  if (kind === 'probe')
+    return { name: `system-inline-probe-${suffix}`, icon: 'rt-probe', lines: ['Timeout: 10s', 'Interval: 2s'] }
+  if (kind === 'cpu-hog')
+    return { name: `pod-cpu-hog-${suffix}`, icon: 'chaos-fault', lines: ['Duration: 60s', 'CPU cores: 1'] }
+  return { name: `pod-delete-${suffix}`, icon: 'chaos-fault', lines: ['Duration: 30s', 'Interval: 10s'] }
 }
 
 const STEP_WIDTH = 220
@@ -843,6 +845,98 @@ const PodDeleteStepDrawer = ({
   </Drawer.Root>
 )
 
+/**
+ * Config drawer for the "Pod CPU Hog" fault. Mirrors the Pod Delete drawer, swapping in the
+ * CPU-hog-specific parameters (CPU cores instead of an interval).
+ */
+const PodCpuHogStepDrawer = ({
+  open,
+  onOpenChange,
+  onAddStep,
+  mode = 'add',
+  stepName = 'pod-cpu-hog-538a'
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAddStep: () => void
+  mode?: 'add' | 'edit'
+  stepName?: string
+}) => (
+  <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+    <Drawer.Content size="sm">
+      <Drawer.Header>
+        <Drawer.Title>{mode === 'edit' ? 'Edit: Pod CPU Hog' : 'Add step: Pod CPU Hog'}</Drawer.Title>
+        <Drawer.Description>
+          Consumes excess CPU within a pod to test behavior under resource contention and throttling.
+        </Drawer.Description>
+      </Drawer.Header>
+
+      <Drawer.Body>
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          <TextInput
+            label="Name"
+            key={stepName}
+            defaultValue={stepName}
+            suffix={
+              <span
+                className="inline-flex items-center"
+                style={{ gap: 4, height: 24, padding: '0 9px', borderRadius: 6, border: '1px solid var(--cn-border-2)' }}
+              >
+                <IconV2 name="sparks" size="xs" className="text-cn-2" />
+                <Text variant="caption-single-line-normal" color="foreground-2">
+                  suggested
+                </Text>
+              </span>
+            }
+          />
+
+          <TextInput label="Namespace" placeholder="e.g. default" />
+
+          <NumberInput label="Duration (in seconds)" tooltipContent="How long the fault is injected." defaultValue={60} />
+
+          <NumberInput
+            label="CPU cores"
+            tooltipContent="Number of CPU cores to consume in the target pod."
+            defaultValue={1}
+          />
+
+          <Accordion.Root type="multiple" variant="card">
+            <Accordion.Item value="optional">
+              <Accordion.Trigger>Optional configuration</Accordion.Trigger>
+              <Accordion.Content>
+                <NumberInput
+                  label="CPU load (in percentage)"
+                  tooltipContent="Percentage of each core's capacity to consume."
+                  defaultValue={100}
+                />
+              </Accordion.Content>
+            </Accordion.Item>
+            <Accordion.Item value="advanced">
+              <Accordion.Trigger>Advanced</Accordion.Trigger>
+              <Accordion.Content>
+                <Text variant="body-normal" color="foreground-3">
+                  No advanced settings.
+                </Text>
+              </Accordion.Content>
+            </Accordion.Item>
+          </Accordion.Root>
+        </div>
+      </Drawer.Body>
+
+      <Drawer.Footer>
+        <div className="flex w-full items-center justify-between">
+          <Button variant="secondary" size="sm" iconOnly aria-label="Delete step" tooltipProps={{ content: 'Delete' }}>
+            <IconV2 name="trash" />
+          </Button>
+          <Button size="sm" onClick={onAddStep}>
+            {mode === 'edit' ? 'Save' : 'Add step'}
+          </Button>
+        </div>
+      </Drawer.Footer>
+    </Drawer.Content>
+  </Drawer.Root>
+)
+
 /** Collapsible section header (chevron + title) used inside the probe config drawer. */
 const DrawerSection = ({ title, children }: { title: string; children: ReactNode }) => {
   const [open, setOpen] = useState(true)
@@ -976,6 +1070,7 @@ const AddStepDrawer = ({
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [podDeleteOpen, setPodDeleteOpen] = useState(false)
+  const [podCpuHogOpen, setPodCpuHogOpen] = useState(false)
   const [probeOpen, setProbeOpen] = useState(false)
   const steps = STEP_ITEMS.filter(
     step =>
@@ -1019,9 +1114,11 @@ const AddStepDrawer = ({
                     onClick={
                       step.title === 'Pod Delete'
                         ? () => setPodDeleteOpen(true)
-                        : step.title === 'System Inline Probe'
-                          ? () => setProbeOpen(true)
-                          : undefined
+                        : step.title === 'Pod CPU Hog'
+                          ? () => setPodCpuHogOpen(true)
+                          : step.title === 'System Inline Probe'
+                            ? () => setProbeOpen(true)
+                            : undefined
                     }
                   />
                 ))}
@@ -1038,6 +1135,14 @@ const AddStepDrawer = ({
         onAddStep={() => {
           setPodDeleteOpen(false)
           onAddStep('fault')
+        }}
+      />
+      <PodCpuHogStepDrawer
+        open={podCpuHogOpen}
+        onOpenChange={setPodCpuHogOpen}
+        onAddStep={() => {
+          setPodCpuHogOpen(false)
+          onAddStep('cpu-hog')
         }}
       />
       <SystemInlineProbeStepDrawer
@@ -1186,9 +1291,14 @@ export const ChaosStudioView = () => {
     })
   }
 
-  // Open the matching config drawer for an existing step (fault vs probe inferred from its name).
+  // Open the matching config drawer for an existing step (fault kind inferred from its name).
   const editStep = (nodeName: string) => {
-    setEditTarget({ name: nodeName, kind: nodeName.startsWith('system-inline-probe') ? 'probe' : 'fault' })
+    const kind: StepKind = nodeName.startsWith('system-inline-probe')
+      ? 'probe'
+      : nodeName.startsWith('pod-cpu-hog')
+        ? 'cpu-hog'
+        : 'fault'
+    setEditTarget({ name: nodeName, kind })
   }
 
   return (
@@ -1274,7 +1384,7 @@ export const ChaosStudioView = () => {
               // 15px and kinks the start/end connector into a spanning parallel group).
               serialContainerConfig={{ paddingTop: 35, paddingBottom: 35 }}
               parallelContainerConfig={{ paddingTop: 35, paddingBottom: 35 }}
-              edgesConfig={{ radius: 10, parallelNodeOffset: 22, serialNodeOffset: 10 }}
+              edgesConfig={{ radius: 10, parallelNodeOffset: 10, serialNodeOffset: 10 }}
             />
           </CanvasProvider>
           </div>
@@ -1327,6 +1437,13 @@ export const ChaosStudioView = () => {
           so Save just closes.) */}
       <PodDeleteStepDrawer
         open={editTarget?.kind === 'fault'}
+        onOpenChange={open => !open && setEditTarget(null)}
+        onAddStep={() => setEditTarget(null)}
+        mode="edit"
+        stepName={editTarget?.name}
+      />
+      <PodCpuHogStepDrawer
+        open={editTarget?.kind === 'cpu-hog'}
         onOpenChange={open => !open && setEditTarget(null)}
         onAddStep={() => setEditTarget(null)}
         mode="edit"
