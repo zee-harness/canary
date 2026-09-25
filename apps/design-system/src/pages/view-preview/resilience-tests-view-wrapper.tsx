@@ -77,7 +77,7 @@ const ResilienceTestsSidebar = ({
             active={activeNav === 'load-tests'}
             title="Load Tests"
           />
-          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/dr-tests" title="DR Testing" />
+          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/dr-tests" title="DR Tests" />
           <Sidebar.MenuSubItem to="/view-preview/resilience-tests/usage" title="Resilience Test Usage" />
           <Sidebar.MenuSubItem to="/view-preview/resilience-tests/settings" title="Settings" />
         </Sidebar.Item>
