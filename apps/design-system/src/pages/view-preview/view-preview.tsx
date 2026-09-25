@@ -14,6 +14,7 @@ import DataTableStickyHeaderDemo from '@subjects/views/data-table-sticky-header-
 import ChaosExperimentsView from '@subjects/views/chaos-experiments/chaos-experiments'
 import { ChaosStudioView } from '@subjects/views/chaos-experiments/chaos-studio'
 import { ExperimentExecutionView } from '@subjects/views/chaos-experiments/experiment-execution'
+import { ResilienceInsightsView } from '@subjects/views/chaos-experiments/resilience-insights'
 import { ResilienceOverview } from '@subjects/views/chaos-experiments/resilience-overview'
 import { ResilienceUsageView } from '@subjects/views/chaos-experiments/resilience-usage'
 import DraggableCardsDemo from '@subjects/views/draggable-cards-demo'
@@ -356,6 +357,14 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
         element: (
           <ResilienceTestsViewWrapper activeNav="overview">
             <ResilienceOverview />
+          </ResilienceTestsViewWrapper>
+        )
+      },
+      'resilience-tests/insights': {
+        label: 'Insights',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="insights">
+            <ResilienceInsightsView />
           </ResilienceTestsViewWrapper>
         )
       },

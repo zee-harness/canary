@@ -4,7 +4,7 @@ import { Breadcrumb, HarnessLogo, IconV2, Sidebar, Text, useSidebar } from '@har
 
 import { AppViewWrapper, AppViewWrapperProps } from './app-view-wrapper'
 
-type ResilienceNav = 'overview' | 'chaos-experiments' | 'usage'
+type ResilienceNav = 'overview' | 'insights' | 'chaos-experiments' | 'usage'
 
 const OVERVIEW_ROUTE = '/view-preview/resilience-tests/overview'
 const CHAOS_ROUTE = '/view-preview/resilience-tests/chaos-experiments'
@@ -56,7 +56,12 @@ const ResilienceTestsSidebar = ({
       <Sidebar.Group label="Recent">
         <Sidebar.Item icon="chaos-tests" title="Resilience Tests" defaultSubmenuOpen>
           <Sidebar.MenuSubItem to={OVERVIEW_ROUTE} end active={activeNav === 'overview'} title="Overview" />
-          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/insights" title="Insights" />
+          <Sidebar.MenuSubItem
+            to="/view-preview/resilience-tests/insights"
+            end
+            active={activeNav === 'insights'}
+            title="Insights"
+          />
           <Sidebar.MenuSubItem
             to={CHAOS_ROUTE}
             end
@@ -98,6 +103,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
 }) => {
   const isChaos = activeNav === 'chaos-experiments'
   const isUsage = activeNav === 'usage'
+  const isInsights = activeNav === 'insights'
   const hasLeaf = Boolean(leaf)
 
   return (
@@ -118,12 +124,20 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
           <Breadcrumb.Root className="select-none">
             <Breadcrumb.List>
               <Breadcrumb.Item>
-                {isChaos || isUsage ? (
-                  <Breadcrumb.Link href="#">Resilience Testing</Breadcrumb.Link>
+                {isChaos || isUsage || isInsights ? (
+                  <Breadcrumb.Link href="#">{isInsights ? 'Resilience Tests' : 'Resilience Testing'}</Breadcrumb.Link>
                 ) : (
                   <Breadcrumb.Page>Resilience Testing</Breadcrumb.Page>
                 )}
               </Breadcrumb.Item>
+              {isInsights && (
+                <>
+                  <Breadcrumb.Separator />
+                  <Breadcrumb.Item>
+                    <Breadcrumb.Page>Insights</Breadcrumb.Page>
+                  </Breadcrumb.Item>
+                </>
+              )}
               {isUsage && (
                 <>
                   <Breadcrumb.Separator />
