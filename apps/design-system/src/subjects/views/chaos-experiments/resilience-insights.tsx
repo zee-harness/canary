@@ -297,6 +297,98 @@ const ServiceRiskDrawer = ({
   )
 }
 
+interface ListedRisk {
+  id: string
+  severity: RiskSeverity
+  title: string
+  service: string
+  validation: 'Passive' | 'Confirmed'
+  source: string
+  lastDetected: string
+}
+
+const listedRisks: ListedRisk[] = [
+  {
+    id: 'risk-1',
+    severity: 'critical',
+    title: 'Single replica in deployment',
+    service: 'cart-service',
+    validation: 'Passive',
+    source: 'scan-05-11-2026',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-2',
+    severity: 'critical',
+    title: 'Missing resource limits',
+    service: 'payment-service',
+    validation: 'Confirmed',
+    source: 'pod-delete-53r',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-3',
+    severity: 'high',
+    title: 'Memory exhaustion under peak load',
+    service: 'accounts-db',
+    validation: 'Passive',
+    source: 'scan-05-11-2026',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-4',
+    severity: 'high',
+    title: 'Memory exhaustion under peak load',
+    service: 'accounts-db',
+    validation: 'Passive',
+    source: 'scan-05-11-2026',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-5',
+    severity: 'medium',
+    title: 'Downtime stream not handled',
+    service: 'payment-service',
+    validation: 'Passive',
+    source: 'Manifest scan',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-6',
+    severity: 'medium',
+    title: 'Downtime stream not handled',
+    service: 'checkout-service',
+    validation: 'Passive',
+    source: 'Manifest scan',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-7',
+    severity: 'medium',
+    title: 'Downtime stream not handled',
+    service: 'cart-service',
+    validation: 'Passive',
+    source: 'Manifest scan',
+    lastDetected: '10 min ago'
+  },
+  {
+    id: 'risk-8',
+    severity: 'low',
+    title: 'No disaster recovery test performed',
+    service: 'cart-service',
+    validation: 'Passive',
+    source: 'Manifest scan',
+    lastDetected: '10 min ago'
+  }
+]
+
+const SEVERITY_BADGE: Record<RiskSeverity, { label: string; theme: 'danger' | 'warning' | 'info' | 'risk' }> = {
+  critical: { label: 'Critical', theme: 'danger' },
+  high: { label: 'High', theme: 'warning' },
+  medium: { label: 'Medium', theme: 'risk' },
+  low: { label: 'Low', theme: 'info' }
+}
+
 const RISK_SUMMARY = [
   { label: 'Total risks', value: 218 },
   { label: 'Risks scanned from pipelines', value: 57 },
@@ -314,6 +406,198 @@ const RiskCount = ({ value, label, color }: { value: number; label: string; colo
     </Text>
   </div>
 )
+
+const InsightsRiskList = ({ onOpenService }: { onOpenService: (service: ServiceAtRisk) => void }) => {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [severity, setSeverity] = useState<RiskSeverity | 'all'>('all')
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const filtered = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return listedRisks.filter(risk => {
+      const matchesQuery =
+        !query || risk.title.toLowerCase().includes(query) || risk.service.toLowerCase().includes(query)
+      const matchesSeverity = severity === 'all' || risk.severity === severity
+      return matchesQuery && matchesSeverity
+    })
+  }, [searchQuery, severity])
+
+  const columns = useMemo<ColumnDef<ListedRisk>[]>(
+    () => [
+      {
+        accessorKey: 'severity',
+        header: 'Severity',
+        enableSorting: true,
+        size: 130,
+        cell: ({ row }) => {
+          const badge = SEVERITY_BADGE[row.original.severity]
+          return (
+            <StatusBadge variant="outline" theme={badge.theme} icon="warning-circle" size="sm">
+              {badge.label}
+            </StatusBadge>
+          )
+        }
+      },
+      {
+        accessorKey: 'title',
+        header: 'Risk',
+        enableSorting: true,
+        size: 220,
+        cell: ({ row }) => (
+          <Text variant="body-normal" color="foreground-1">
+            {row.original.title}
+          </Text>
+        )
+      },
+      {
+        accessorKey: 'service',
+        header: 'Service',
+        enableSorting: false,
+        size: 140,
+        cell: ({ row }) => {
+          const service = servicesAtRisk.find(item => item.name === row.original.service)
+          return (
+            <Button variant="link" size="sm" onClick={() => service && onOpenService(service)}>
+              {row.original.service}
+            </Button>
+          )
+        }
+      },
+      {
+        accessorKey: 'validation',
+        header: 'Latest validation',
+        enableSorting: false,
+        size: 150,
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2">
+            {row.original.validation}
+          </Text>
+        )
+      },
+      {
+        accessorKey: 'source',
+        header: 'Source',
+        enableSorting: false,
+        size: 160,
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2">
+            {row.original.source}
+          </Text>
+        )
+      },
+      {
+        accessorKey: 'lastDetected',
+        header: 'Last detected',
+        enableSorting: true,
+        size: 140,
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2" className="whitespace-nowrap">
+            {row.original.lastDetected}
+          </Text>
+        )
+      },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        size: 48,
+        cell: () => (
+          <div className="flex justify-end">
+            <MoreActionsTooltip
+              buttonSize="sm"
+              actions={[
+                { title: 'View risk', iconName: 'eye' },
+                { title: 'Edit', iconName: 'edit' },
+                { title: 'Delete', iconName: 'trash', isDanger: true }
+              ]}
+            />
+          </div>
+        )
+      }
+    ],
+    [onOpenService]
+  )
+
+  return (
+    <>
+      <ListActions.Root>
+        <ListActions.Left>
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <SearchInput
+              inputContainerClassName="max-w-80"
+              placeholder="Search"
+              defaultValue={searchQuery}
+              onChange={value => {
+                setSearchQuery(value)
+                setPage(1)
+              }}
+            />
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <Button variant="outline" size="sm">
+                  {severity === 'all' ? 'Severity' : SEVERITY_BADGE[severity].label}
+                  <IconV2 name="nav-arrow-down" />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start">
+                <DropdownMenu.Item
+                  title="All"
+                  onClick={() => {
+                    setSeverity('all')
+                    setPage(1)
+                  }}
+                />
+                {(Object.keys(SEVERITY_BADGE) as RiskSeverity[]).map(level => (
+                  <DropdownMenu.Item
+                    key={level}
+                    title={SEVERITY_BADGE[level].label}
+                    onClick={() => {
+                      setSeverity(level)
+                      setPage(1)
+                    }}
+                  />
+                ))}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+            <Button variant="ghost" size="sm">
+              <IconV2 name="plus" />
+              Add filter
+            </Button>
+          </div>
+        </ListActions.Left>
+        <ListActions.Right>
+          <Button variant="outline" size="sm">
+            <IconV2 name="view-columns-2" />
+            Columns 5/6
+            <IconV2 name="nav-arrow-down" />
+          </Button>
+        </ListActions.Right>
+      </ListActions.Root>
+      <Spacer size={4} />
+      <DataTable<ListedRisk>
+        columns={columns}
+        data={filtered}
+        size="compact"
+        getRowId={row => row.id}
+        currentSorting={sorting}
+        onSortingChange={setSorting}
+        manualSorting
+        paginationProps={{
+          currentPage: page,
+          pageSize,
+          totalItems: filtered.length,
+          goToPage: setPage,
+          onPageSizeChange: nextSize => {
+            setPageSize(nextSize)
+            setPage(1)
+          }
+        }}
+      />
+    </>
+  )
+}
 
 const InsightsRisks = () => {
   const [tab, setTab] = useState<'summary' | 'risks'>('summary')
@@ -407,18 +691,18 @@ const InsightsRisks = () => {
           <Text variant="body-strong">Top services at risk</Text>
           <Spacer size={4} />
           <DataTable<ServiceAtRisk> columns={columns} data={servicesAtRisk} size="compact" getRowId={row => row.name} />
-          <ServiceRiskDrawer
-            key={selectedService?.name ?? 'closed'}
-            service={selectedService}
-            open={selectedService !== null}
-            onOpenChange={open => {
-              if (!open) setSelectedService(null)
-            }}
-          />
         </>
       ) : (
-        <Text color="foreground-3">No individual risks yet.</Text>
+        <InsightsRiskList onOpenService={setSelectedService} />
       )}
+      <ServiceRiskDrawer
+        key={selectedService?.name ?? 'closed'}
+        service={selectedService}
+        open={selectedService !== null}
+        onOpenChange={open => {
+          if (!open) setSelectedService(null)
+        }}
+      />
     </>
   )
 }
