@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
@@ -707,6 +707,506 @@ const InsightsRisks = () => {
   )
 }
 
+type PipelineScanKind = 'rule' | 'ai'
+type PipelineScanStatus = 'completed' | 'error'
+
+interface PipelineScanRisks {
+  critical: number
+  high: number
+  medium: number
+  low: number
+}
+
+interface PipelineScan {
+  id: string
+  name: string
+  kind: PipelineScanKind
+  score: number | null
+  risks: PipelineScanRisks | null
+  status: PipelineScanStatus
+  action: 'onboard' | 'view'
+  overviewName: string
+  pipelineId: string
+  pipelineName: string
+  scanned: string
+  lastUpdated: string
+  scanTimestamp: string
+  servicesScanned: number | null
+  risksDetectedAgo: string | null
+}
+
+const PIPELINE_SCORE_COLOR = 'var(--cn-set-orange-primary-bg)'
+
+const pipelineScans: PipelineScan[] = [
+  {
+    id: 'pipeline-scan-1',
+    name: 'devops-core-pipeline-scan-0152',
+    kind: 'rule',
+    score: 567,
+    risks: { critical: 4, high: 5, medium: 26, low: 17 },
+    status: 'completed',
+    action: 'onboard',
+    overviewName: 'devops-core-pipeline-scan-0215',
+    pipelineId: 'devops-core-pipeline',
+    pipelineName: 'devops-core-pipeline',
+    scanned: '10m ago',
+    lastUpdated: '10m ago',
+    scanTimestamp: '2026-05-26 13:07 UTC',
+    servicesScanned: 42,
+    risksDetectedAgo: '5 minutes ago'
+  },
+  {
+    id: 'pipeline-scan-2',
+    name: 'devops-core-pipeline-scan-prod',
+    kind: 'ai',
+    score: null,
+    risks: null,
+    status: 'error',
+    action: 'view',
+    overviewName: 'devops-core-pipeline-scan-0216',
+    pipelineId: 'devops-core-pipeline',
+    pipelineName: 'devops-core-pipeline',
+    scanned: '10m ago',
+    lastUpdated: '10m ago',
+    scanTimestamp: '2026-05-26 13:12 UTC',
+    servicesScanned: null,
+    risksDetectedAgo: null
+  },
+  {
+    id: 'pipeline-scan-3',
+    name: 'devops-core-pipeline-scan-prod',
+    kind: 'rule',
+    score: 650,
+    risks: { critical: 2, high: 3, medium: 3, low: 2 },
+    status: 'completed',
+    action: 'onboard',
+    overviewName: 'devops-core-pipeline-scan-0301',
+    pipelineId: 'devops-core-pipeline',
+    pipelineName: 'devops-core-pipeline',
+    scanned: '10m ago',
+    lastUpdated: '10m ago',
+    scanTimestamp: '2026-05-26 12:41 UTC',
+    servicesScanned: 18,
+    risksDetectedAgo: '12 minutes ago'
+  }
+]
+
+const riskTotal = (risks: PipelineScanRisks) => risks.critical + risks.high + risks.medium + risks.low
+
+const RiskStack = ({ risks }: { risks: PipelineScanRisks }) => {
+  const total = riskTotal(risks)
+  const segments = [
+    { key: 'critical', value: risks.critical, color: 'var(--cn-text-danger)' },
+    { key: 'high', value: risks.high, color: 'var(--cn-set-orange-primary-bg)' },
+    { key: 'medium', value: risks.medium, color: 'var(--cn-text-warning)' },
+    { key: 'low', value: risks.low, color: 'var(--cn-set-blue-primary-bg)' }
+  ]
+
+  return (
+    <div className="flex items-center" style={{ gap: 8 }}>
+      <div className="bg-cn-2 flex h-1.5 overflow-hidden rounded-full" style={{ width: 72 }}>
+        {segments.map(segment =>
+          segment.value > 0 ? (
+            <div
+              key={segment.key}
+              style={{ width: `${(segment.value / total) * 100}%`, backgroundColor: segment.color }}
+            />
+          ) : null
+        )}
+      </div>
+      <Text variant="body-single-line-normal" color="foreground-1" className="whitespace-nowrap">
+        {total} total
+      </Text>
+    </div>
+  )
+}
+
+const ScanDetailField = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="flex flex-col items-start" style={{ gap: 4 }}>
+    <Text variant="caption-single-line-normal" color="foreground-3">
+      {label}
+    </Text>
+    {children}
+  </div>
+)
+
+const PipelineScanDetails = ({ scan, onBack }: { scan: PipelineScan; onBack: () => void }) => {
+  const [tab, setTab] = useState<'summary' | 'heatmap' | 'services'>('summary')
+  const riskBoxes = scan.risks
+    ? [
+        { label: 'Critical', value: scan.risks.critical, color: RISK_COLORS.critical },
+        { label: 'High', value: scan.risks.high, color: RISK_COLORS.high },
+        { label: 'Medium', value: scan.risks.medium, color: RISK_COLORS.medium },
+        { label: 'Low', value: scan.risks.low, color: RISK_COLORS.low }
+      ]
+    : []
+
+  return (
+    <>
+      <div className="flex items-start justify-between" style={{ gap: 16 }}>
+        <div className="flex min-w-0 flex-col" style={{ gap: 8 }}>
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <button type="button" onClick={onBack} className="text-left">
+              <Text variant="body-single-line-normal" color="foreground-3">
+                Pipeline Scans
+              </Text>
+            </button>
+            <Text variant="body-single-line-normal" color="foreground-3">
+              /
+            </Text>
+            <Text variant="body-single-line-normal" color="foreground-1" truncate>
+              {scan.name}
+            </Text>
+          </div>
+          <Text variant="heading-base">{scan.name}</Text>
+        </div>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <Button variant="outline" size="sm" iconOnly aria-label="Scan actions">
+              <IconV2 name="more-vert" />
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end">
+            <DropdownMenu.Item title="Rerun scan" onClick={() => {}} />
+            <DropdownMenu.Item title="Export scan" onClick={() => {}} />
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      </div>
+
+      <Spacer size={5} />
+
+      <div className="flex items-start" style={{ gap: 40 }}>
+        <ScanDetailField label="Status">
+          {scan.status === 'completed' ? (
+            <StatusBadge variant="outline" theme="success" icon="check-circle" size="sm">
+              Completed
+            </StatusBadge>
+          ) : (
+            <StatusBadge variant="outline" theme="danger" icon="xmark-circle" size="sm">
+              Error
+            </StatusBadge>
+          )}
+        </ScanDetailField>
+        <ScanDetailField label="Scanned">
+          <Text variant="body-single-line-normal" color="foreground-1">
+            {scan.scanned}
+          </Text>
+        </ScanDetailField>
+        <ScanDetailField label="Last updated">
+          <Text variant="body-single-line-normal" color="foreground-1">
+            {scan.lastUpdated}
+          </Text>
+        </ScanDetailField>
+      </div>
+
+      <Spacer size={5} />
+
+      <Tabs.Root value={tab} onValueChange={value => setTab(value as 'summary' | 'heatmap' | 'services')}>
+        <Tabs.List>
+          <Tabs.Trigger value="summary">Summary</Tabs.Trigger>
+          <Tabs.Trigger value="heatmap">Risk detection heatmap</Tabs.Trigger>
+          <Tabs.Trigger value="services">Services with risk</Tabs.Trigger>
+        </Tabs.List>
+      </Tabs.Root>
+
+      <Spacer size={4} />
+
+      {tab === 'summary' ? (
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          <Card.Root>
+            <Card.Content className="flex flex-col" style={{ gap: 16 }}>
+              <Text variant="body-strong">Overview</Text>
+              <div className="grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }}>
+                <ScanDetailField label="Name">
+                  <Text variant="body-single-line-normal" color="foreground-1">
+                    {scan.overviewName}
+                  </Text>
+                  <ScanDetailField label="Pipeline">
+                    <Button variant="link" size="sm">
+                      {scan.pipelineName}
+                    </Button>
+                  </ScanDetailField>
+                </ScanDetailField>
+                <ScanDetailField label="ID">
+                  <Text variant="body-single-line-normal" color="foreground-1">
+                    {scan.pipelineId}
+                  </Text>
+                </ScanDetailField>
+                <ScanDetailField label="Scan timestamp">
+                  <Text variant="body-single-line-normal" color="foreground-1">
+                    {scan.scanTimestamp}
+                  </Text>
+                </ScanDetailField>
+              </div>
+            </Card.Content>
+          </Card.Root>
+
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+            <Card.Root>
+              <Card.Content className="flex flex-col" style={{ gap: 12 }}>
+                <Text variant="body-strong">Services scanned</Text>
+                <Text variant="heading-section">
+                  {scan.servicesScanned === null ? '-' : scan.servicesScanned}
+                </Text>
+              </Card.Content>
+            </Card.Root>
+            <Card.Root>
+              <Card.Content className="flex flex-col" style={{ gap: 12 }}>
+                <Text variant="body-strong">Risk score</Text>
+                {scan.score === null ? (
+                  <Text variant="heading-section" color="foreground-3">
+                    -
+                  </Text>
+                ) : (
+                  <div className="flex items-baseline" style={{ gap: 8 }}>
+                    <Text variant="heading-section" style={{ color: RISK_COLORS.critical }}>
+                      {scan.score}
+                    </Text>
+                    <Text variant="heading-section" color="foreground-1">
+                      / 1000
+                    </Text>
+                  </div>
+                )}
+              </Card.Content>
+            </Card.Root>
+          </div>
+
+          <Card.Root>
+            <Card.Content className="flex items-center justify-between" style={{ gap: 16 }}>
+              <div className="flex flex-col" style={{ gap: 4 }}>
+                <Text variant="body-strong">Risks detected in this pipeline</Text>
+                <Text variant="caption-single-line-normal" color="foreground-3">
+                  {scan.risksDetectedAgo ?? 'Not available'}
+                </Text>
+              </div>
+              {riskBoxes.length > 0 ? (
+                <div className="flex items-stretch" style={{ gap: 12 }}>
+                  {riskBoxes.map(item => (
+                    <div
+                      key={item.label}
+                      className="flex flex-col items-start"
+                      style={{
+                        gap: 4,
+                        minWidth: 88,
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid var(--cn-border-2)'
+                      }}
+                    >
+                      <Text variant="caption-single-line-normal" color="foreground-3">
+                        {item.label}
+                      </Text>
+                      <Text variant="heading-base" style={{ color: item.color }}>
+                        {item.value}
+                      </Text>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Text color="foreground-3">No risks detected</Text>
+              )}
+            </Card.Content>
+          </Card.Root>
+        </div>
+      ) : (
+        <Text color="foreground-3">
+          {tab === 'heatmap' ? 'No risk detection heatmap yet.' : 'No services with risk yet.'}
+        </Text>
+      )}
+    </>
+  )
+}
+
+const InsightsPipelineScans = ({ onOpenScan }: { onOpenScan: (scan: PipelineScan) => void }) => {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortLabel, setSortLabel] = useState('Last added')
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  const filtered = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    const matched = query ? pipelineScans.filter(scan => scan.name.toLowerCase().includes(query)) : pipelineScans
+    if (sortLabel === 'Name') return [...matched].sort((a, b) => a.name.localeCompare(b.name))
+    return matched
+  }, [searchQuery, sortLabel])
+
+  const columns = useMemo<ColumnDef<PipelineScan>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Pipeline',
+        enableSorting: true,
+        size: 220,
+        cell: ({ row }) => (
+          <div className="gap-cn-sm flex min-w-0 items-center">
+            <LogoV2 name="harness" size="sm" />
+            <Text variant="body-single-line-normal" color="foreground-1" truncate>
+              {row.original.name}
+            </Text>
+          </div>
+        )
+      },
+      {
+        accessorKey: 'kind',
+        header: 'Scan type',
+        enableSorting: false,
+        size: 140,
+        cell: ({ row }) =>
+          row.original.kind === 'ai' ? (
+            <StatusBadge variant="outline" theme="info" icon="sparks" size="sm">
+              AI
+            </StatusBadge>
+          ) : (
+            <StatusBadge variant="outline" theme="success" icon="list" size="sm">
+              Rule-based
+            </StatusBadge>
+          )
+      },
+      {
+        accessorKey: 'score',
+        header: 'Risk score',
+        enableSorting: false,
+        size: 160,
+        cell: ({ row }) =>
+          row.original.score === null ? (
+            <Text variant="body-single-line-normal" color="foreground-3">
+              -
+            </Text>
+          ) : (
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <div className="bg-cn-2 h-1.5 overflow-hidden rounded-full" style={{ width: 56 }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${(row.original.score / 1000) * 100}%`,
+                    backgroundColor: PIPELINE_SCORE_COLOR
+                  }}
+                />
+              </div>
+              <Text variant="body-single-line-normal" color="foreground-1" className="whitespace-nowrap">
+                {row.original.score} / 1000
+              </Text>
+            </div>
+          )
+      },
+      {
+        id: 'risks',
+        header: 'Risks detected',
+        enableSorting: false,
+        size: 160,
+        cell: ({ row }) =>
+          row.original.risks ? (
+            <RiskStack risks={row.original.risks} />
+          ) : (
+            <Text variant="body-single-line-normal" color="foreground-3">
+              -
+            </Text>
+          )
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        enableSorting: false,
+        size: 130,
+        cell: ({ row }) =>
+          row.original.status === 'completed' ? (
+            <StatusBadge variant="outline" theme="success" icon="check-circle" size="sm">
+              Completed
+            </StatusBadge>
+          ) : (
+            <StatusBadge variant="outline" theme="danger" icon="xmark-circle" size="sm">
+              Error
+            </StatusBadge>
+          )
+      },
+      {
+        id: 'action',
+        header: '',
+        enableSorting: false,
+        size: 120,
+        cell: ({ row }) => (
+          <div onClick={event => event.stopPropagation()}>
+            {row.original.action === 'view' ? (
+              <Button variant="outline" size="sm" onClick={() => onOpenScan(row.original)}>
+                <IconV2 name="eye" />
+                View
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm">
+                <IconV2 name="plus" />
+                Onboard
+              </Button>
+            )}
+          </div>
+        )
+      }
+    ],
+    [onOpenScan]
+  )
+
+  return (
+    <>
+      <Spacer size={4} />
+      <ListActions.Root>
+        <ListActions.Left>
+          <SearchInput
+            inputContainerClassName="max-w-80"
+            placeholder="Search"
+            defaultValue={searchQuery}
+            onChange={value => {
+              setSearchQuery(value)
+              setPage(1)
+            }}
+          />
+        </ListActions.Left>
+        <ListActions.Right className="gap-cn-xs">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <Button variant="outline" size="sm">
+                <IconV2 name="sort-2" />
+                {sortLabel}
+                <IconV2 name="nav-arrow-down" />
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Item title="Last added" onClick={() => setSortLabel('Last added')} />
+              <DropdownMenu.Item title="Name" onClick={() => setSortLabel('Name')} />
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+          <Button variant="outline" size="sm">
+            <IconV2 name="view-columns-2" />
+            Columns 4/10
+            <IconV2 name="nav-arrow-down" />
+          </Button>
+        </ListActions.Right>
+      </ListActions.Root>
+      <Spacer size={4} />
+      <DataTable<PipelineScan>
+        columns={columns}
+        data={filtered}
+        size="compact"
+        getRowId={row => row.id}
+        getRowClassName={() => 'cursor-pointer'}
+        onRowClick={onOpenScan}
+        currentSorting={sorting}
+        onSortingChange={setSorting}
+        manualSorting
+        paginationProps={{
+          currentPage: page,
+          pageSize,
+          totalItems: filtered.length,
+          goToPage: setPage,
+          onPageSizeChange: nextSize => {
+            setPageSize(nextSize)
+            setPage(1)
+          }
+        }}
+      />
+    </>
+  )
+}
+
 const SECTION_IDS = new Set<InsightsSection>(SECTIONS.map(item => item.id))
 
 export const ResilienceInsightsView: React.FC = () => {
@@ -719,6 +1219,10 @@ export const ResilienceInsightsView: React.FC = () => {
     if (id === 'services') setSearchParams({}, { replace: true })
     else setSearchParams({ section: id }, { replace: true })
   }
+  const selectedScan =
+    section === 'pipeline-scans' ? pipelineScans.find(scan => scan.id === searchParams.get('scan')) ?? null : null
+  const openScan = (scan: PipelineScan) => setSearchParams({ section: 'pipeline-scans', scan: scan.id })
+  const closeScan = () => setSearchParams({ section: 'pipeline-scans' })
   const [searchQuery, setSearchQuery] = useState('')
   const [sorting, setSorting] = useState<SortingState>([])
   const [page, setPage] = useState(1)
@@ -853,24 +1357,42 @@ export const ResilienceInsightsView: React.FC = () => {
           </nav>
 
           <div className="flex min-w-0 flex-1 flex-col">
+            {selectedScan ? (
+              <PipelineScanDetails scan={selectedScan} onBack={closeScan} />
+            ) : (
+              <>
             <div className="flex items-center justify-between">
               <Text variant="heading-base">{sectionLabel}</Text>
-              {section === 'services' && (
+              {(section === 'services' || section === 'pipeline-scans') && (
                 <div className="flex items-center" style={{ gap: 8 }}>
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild>
-                      <Button variant="outline" size="sm" iconOnly aria-label="Service actions">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        iconOnly
+                        aria-label={section === 'services' ? 'Service actions' : 'Scan actions'}
+                      >
                         <IconV2 name="more-vert" />
                       </Button>
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end">
-                      <DropdownMenu.Item title="Export services" onClick={() => {}} />
-                      <DropdownMenu.Item title="Refresh discovery" onClick={() => {}} />
+                      {section === 'services' ? (
+                        <>
+                          <DropdownMenu.Item title="Export services" onClick={() => {}} />
+                          <DropdownMenu.Item title="Refresh discovery" onClick={() => {}} />
+                        </>
+                      ) : (
+                        <>
+                          <DropdownMenu.Item title="Export scans" onClick={() => {}} />
+                          <DropdownMenu.Item title="Refresh scans" onClick={() => {}} />
+                        </>
+                      )}
                     </DropdownMenu.Content>
                   </DropdownMenu.Root>
                   <Button size="sm">
                     <IconV2 name="plus" />
-                    Onboard service
+                    {section === 'services' ? 'Onboard service' : 'New scan'}
                   </Button>
                 </div>
               )}
@@ -937,10 +1459,14 @@ export const ResilienceInsightsView: React.FC = () => {
               </>
             ) : section === 'risks' ? (
               <InsightsRisks />
+            ) : section === 'pipeline-scans' ? (
+              <InsightsPipelineScans onOpenScan={openScan} />
             ) : (
               <>
                 <Spacer size={4} />
                 <Text color="foreground-3">No {sectionLabel.toLowerCase()} yet.</Text>
+              </>
+            )}
               </>
             )}
           </div>

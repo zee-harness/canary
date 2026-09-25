@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 
@@ -21,6 +22,14 @@ import { SandboxLayout } from '@harnessio/views'
 
 type ScanTab = 'pipelines' | 'infrastructures'
 type ScanKind = 'rule' | 'ai'
+type ScanStatus = 'completed' | 'error'
+
+interface PipelineScanRisks {
+  critical: number
+  high: number
+  medium: number
+  low: number
+}
 
 interface OnboardingCard {
   icon: IconPropsV2['name']
@@ -32,13 +41,10 @@ interface PipelineScan {
   id: string
   name: string
   kind: ScanKind
-  score: number
-  total: number
-  critical: number
-  high: number
-  medium: number
-  low: number
-  lastScanned: string
+  score: number | null
+  risks: PipelineScanRisks | null
+  status: ScanStatus
+  action: 'onboard' | 'view'
 }
 
 const ONBOARDING_CARDS: OnboardingCard[] = [
@@ -64,61 +70,73 @@ const RISK_COLORS = {
   critical: 'var(--cn-text-danger)',
   high: 'var(--cn-set-orange-primary-bg)',
   medium: 'var(--cn-text-warning)',
-  low: 'var(--cn-set-blue-primary-bg)',
-  score: 'var(--cn-set-orange-primary-bg)'
+  low: 'var(--cn-set-blue-primary-bg)'
 }
+
+const PIPELINE_SCORE_COLOR = 'var(--cn-set-orange-primary-bg)'
 
 const pipelineScans: PipelineScan[] = [
   {
-    id: 'scan-1',
-    name: 'devops-core-pipeline-scan-prod',
+    id: 'pipeline-scan-1',
+    name: 'devops-core-pipeline-scan-0152',
     kind: 'rule',
-    score: 550,
-    total: 7,
-    critical: 2,
-    high: 1,
-    medium: 2,
-    low: 2,
-    lastScanned: '10 min ago'
+    score: 567,
+    risks: { critical: 4, high: 5, medium: 26, low: 17 },
+    status: 'completed',
+    action: 'onboard'
   },
   {
-    id: 'scan-2',
+    id: 'pipeline-scan-2',
     name: 'devops-core-pipeline-scan-prod',
     kind: 'ai',
-    score: 550,
-    total: 7,
-    critical: 2,
-    high: 1,
-    medium: 2,
-    low: 2,
-    lastScanned: '10 min ago'
+    score: null,
+    risks: null,
+    status: 'error',
+    action: 'view'
   },
   {
-    id: 'scan-3',
+    id: 'pipeline-scan-3',
     name: 'devops-core-pipeline-scan-prod',
     kind: 'rule',
-    score: 550,
-    total: 7,
-    critical: 2,
-    high: 1,
-    medium: 2,
-    low: 2,
-    lastScanned: '10 min ago'
+    score: 650,
+    risks: { critical: 2, high: 3, medium: 3, low: 2 },
+    status: 'completed',
+    action: 'onboard'
   }
 ]
 
-const RiskCount = ({ value, label, color }: { value: number; label: string; color: string }) => (
-  <div className="flex min-w-0 flex-col">
-    <Text variant="body-single-line-strong" style={{ color }}>
-      {value}
-    </Text>
-    <Text variant="caption-single-line-normal" color="foreground-3" truncate>
-      {label}
-    </Text>
-  </div>
-)
+const riskTotal = (risks: PipelineScanRisks) => risks.critical + risks.high + risks.medium + risks.low
+
+const RiskStack = ({ risks }: { risks: PipelineScanRisks }) => {
+  const total = riskTotal(risks)
+  const segments = [
+    { key: 'critical', value: risks.critical, color: RISK_COLORS.critical },
+    { key: 'high', value: risks.high, color: RISK_COLORS.high },
+    { key: 'medium', value: risks.medium, color: RISK_COLORS.medium },
+    { key: 'low', value: risks.low, color: RISK_COLORS.low }
+  ]
+
+  return (
+    <div className="flex items-center" style={{ gap: 8 }}>
+      <div className="bg-cn-2 flex h-1.5 overflow-hidden rounded-full" style={{ width: 72 }}>
+        {segments.map(segment =>
+          segment.value > 0 ? (
+            <div
+              key={segment.key}
+              style={{ width: `${(segment.value / total) * 100}%`, backgroundColor: segment.color }}
+            />
+          ) : null
+        )}
+      </div>
+      <Text variant="body-single-line-normal" color="foreground-1" className="whitespace-nowrap">
+        {total} total
+      </Text>
+    </div>
+  )
+}
 
 export const ResilienceOverview: React.FC = () => {
+  const navigate = useNavigate()
   const [tab, setTab] = useState<ScanTab>('pipelines')
   const [searchQuery, setSearchQuery] = useState('')
   const [sorting, setSorting] = useState<SortingState>([])
@@ -136,29 +154,36 @@ export const ResilienceOverview: React.FC = () => {
   const totals = useMemo(
     () =>
       filteredScans.reduce(
-        (sum, scan) => ({
-          total: sum.total + scan.total,
-          critical: sum.critical + scan.critical,
-          high: sum.high + scan.high,
-          medium: sum.medium + scan.medium,
-          low: sum.low + scan.low
-        }),
+        (sum, scan) => {
+          if (!scan.risks) return sum
+          return {
+            total: sum.total + riskTotal(scan.risks),
+            critical: sum.critical + scan.risks.critical,
+            high: sum.high + scan.risks.high,
+            medium: sum.medium + scan.risks.medium,
+            low: sum.low + scan.risks.low
+          }
+        },
         { total: 0, critical: 0, high: 0, medium: 0, low: 0 }
       ),
     [filteredScans]
   )
+
+  const openScan = (scan: PipelineScan) => {
+    navigate(`/view-preview/resilience-tests/insights?section=pipeline-scans&scan=${scan.id}`)
+  }
 
   const columns = useMemo<ColumnDef<PipelineScan>[]>(
     () => [
       {
         accessorKey: 'name',
         header: 'Pipeline',
-        enableSorting: false,
-        size: 240,
+        enableSorting: true,
+        size: 220,
         cell: ({ row }) => (
-          <div className="gap-cn-sm flex items-center">
+          <div className="gap-cn-sm flex min-w-0 items-center">
             <LogoV2 name="harness" size="sm" />
-            <Text variant="body-single-line-strong" color="foreground-1" truncate>
+            <Text variant="body-single-line-normal" color="foreground-1" truncate>
               {row.original.name}
             </Text>
           </div>
@@ -168,15 +193,15 @@ export const ResilienceOverview: React.FC = () => {
         accessorKey: 'kind',
         header: 'Scan type',
         enableSorting: false,
-        size: 160,
+        size: 140,
         cell: ({ row }) =>
           row.original.kind === 'ai' ? (
             <StatusBadge variant="outline" theme="info" icon="sparks" size="sm">
-              AI scan
+              AI
             </StatusBadge>
           ) : (
             <StatusBadge variant="outline" theme="success" icon="list" size="sm">
-              Rule-based scan
+              Rule-based
             </StatusBadge>
           )
       },
@@ -184,49 +209,88 @@ export const ResilienceOverview: React.FC = () => {
         accessorKey: 'score',
         header: 'Risk score',
         enableSorting: false,
-        size: 180,
-        cell: ({ row }) => (
-          <div className="gap-cn-xs flex items-center">
-            <div className="bg-cn-2 h-1.5 overflow-hidden rounded-full" style={{ width: 72 }}>
-              <div
-                className="h-full rounded-full"
-                style={{ width: `${(row.original.score / 1000) * 100}%`, backgroundColor: RISK_COLORS.score }}
-              />
-            </div>
-            <Text variant="caption-single-line-normal" color="foreground-2" className="whitespace-nowrap">
-              {row.original.score} / 1000
+        size: 160,
+        cell: ({ row }) =>
+          row.original.score === null ? (
+            <Text variant="body-single-line-normal" color="foreground-3">
+              -
             </Text>
-          </div>
-        )
+          ) : (
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <div className="bg-cn-2 h-1.5 overflow-hidden rounded-full" style={{ width: 56 }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${(row.original.score / 1000) * 100}%`,
+                    backgroundColor: PIPELINE_SCORE_COLOR
+                  }}
+                />
+              </div>
+              <Text variant="body-single-line-normal" color="foreground-1" className="whitespace-nowrap">
+                {row.original.score} / 1000
+              </Text>
+            </div>
+          )
       },
       {
         id: 'risks',
         header: 'Risks detected',
         enableSorting: false,
-        size: 280,
-        cell: ({ row }) => (
-          <div className="flex items-end" style={{ gap: 16 }}>
-            <RiskCount value={row.original.total} label="Total" color="var(--cn-text-1)" />
-            <RiskCount value={row.original.critical} label="Critical" color={RISK_COLORS.critical} />
-            <RiskCount value={row.original.high} label="High" color={RISK_COLORS.high} />
-            <RiskCount value={row.original.medium} label="Medium" color={RISK_COLORS.medium} />
-            <RiskCount value={row.original.low} label="Low" color={RISK_COLORS.low} />
-          </div>
-        )
+        size: 160,
+        cell: ({ row }) =>
+          row.original.risks ? (
+            <RiskStack risks={row.original.risks} />
+          ) : (
+            <Text variant="body-single-line-normal" color="foreground-3">
+              -
+            </Text>
+          )
       },
       {
-        accessorKey: 'lastScanned',
-        header: 'Last scanned',
-        enableSorting: true,
+        accessorKey: 'status',
+        header: 'Status',
+        enableSorting: false,
         size: 130,
+        cell: ({ row }) =>
+          row.original.status === 'completed' ? (
+            <StatusBadge variant="outline" theme="success" icon="check-circle" size="sm">
+              Completed
+            </StatusBadge>
+          ) : (
+            <StatusBadge variant="outline" theme="danger" icon="xmark-circle" size="sm">
+              Error
+            </StatusBadge>
+          )
+      },
+      {
+        id: 'action',
+        header: '',
+        enableSorting: false,
+        size: 120,
         cell: ({ row }) => (
-          <Text variant="body-single-line-normal" color="foreground-2" className="whitespace-nowrap">
-            {row.original.lastScanned}
-          </Text>
+          <div onClick={event => event.stopPropagation()}>
+            {row.original.action === 'view' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  navigate(`/view-preview/resilience-tests/insights?section=pipeline-scans&scan=${row.original.id}`)
+                }
+              >
+                <IconV2 name="eye" />
+                View
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm">
+                <IconV2 name="plus" />
+                Onboard
+              </Button>
+            )}
+          </div>
         )
       }
     ],
-    []
+    [navigate]
   )
 
   const summaryValues =
@@ -349,6 +413,8 @@ export const ResilienceOverview: React.FC = () => {
             data={filteredScans}
             size="compact"
             getRowId={row => row.id}
+            getRowClassName={() => 'cursor-pointer'}
+            onRowClick={openScan}
             currentSorting={sorting}
             onSortingChange={setSorting}
             manualSorting
