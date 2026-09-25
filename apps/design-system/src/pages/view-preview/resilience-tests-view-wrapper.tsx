@@ -4,7 +4,7 @@ import { Breadcrumb, HarnessLogo, IconV2, Sidebar, Text, useSidebar } from '@har
 
 import { AppViewWrapper, AppViewWrapperProps } from './app-view-wrapper'
 
-type ResilienceNav = 'overview' | 'insights' | 'chaos-experiments' | 'usage'
+type ResilienceNav = 'overview' | 'insights' | 'chaos-experiments' | 'usage' | 'load-tests'
 
 const OVERVIEW_ROUTE = '/view-preview/resilience-tests/overview'
 const CHAOS_ROUTE = '/view-preview/resilience-tests/chaos-experiments'
@@ -71,7 +71,12 @@ const ResilienceTestsSidebar = ({
             className={chaosLeafActive ? 'active' : undefined}
             title="Chaos Experiments"
           />
-          <Sidebar.MenuSubItem to="/view-preview/resilience-tests/load-tests" title="Load Tests" />
+          <Sidebar.MenuSubItem
+            to="/view-preview/resilience-tests/load-tests"
+            end
+            active={activeNav === 'load-tests'}
+            title="Load Tests"
+          />
           <Sidebar.MenuSubItem to="/view-preview/resilience-tests/dr-tests" title="DR Testing" />
           <Sidebar.MenuSubItem to="/view-preview/resilience-tests/usage" title="Resilience Test Usage" />
           <Sidebar.MenuSubItem to="/view-preview/resilience-tests/settings" title="Settings" />
@@ -104,6 +109,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
   const isChaos = activeNav === 'chaos-experiments'
   const isUsage = activeNav === 'usage'
   const isInsights = activeNav === 'insights'
+  const isLoadTests = activeNav === 'load-tests'
   const hasLeaf = Boolean(leaf)
 
   return (
@@ -124,12 +130,22 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
           <Breadcrumb.Root className="select-none">
             <Breadcrumb.List>
               <Breadcrumb.Item>
-                {isChaos || isUsage || isInsights ? (
-                  <Breadcrumb.Link href="#">{isInsights ? 'Resilience Tests' : 'Resilience Testing'}</Breadcrumb.Link>
+                {isChaos || isUsage || isInsights || isLoadTests ? (
+                  <Breadcrumb.Link href="#">
+                    {isInsights || isLoadTests ? 'Resilience Tests' : 'Resilience Testing'}
+                  </Breadcrumb.Link>
                 ) : (
                   <Breadcrumb.Page>Resilience Testing</Breadcrumb.Page>
                 )}
               </Breadcrumb.Item>
+              {isLoadTests && (
+                <>
+                  <Breadcrumb.Separator />
+                  <Breadcrumb.Item>
+                    <Breadcrumb.Page>Load Tests</Breadcrumb.Page>
+                  </Breadcrumb.Item>
+                </>
+              )}
               {isInsights && (
                 <>
                   <Breadcrumb.Separator />

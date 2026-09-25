@@ -15,6 +15,7 @@ import ChaosExperimentsView from '@subjects/views/chaos-experiments/chaos-experi
 import { ChaosStudioView } from '@subjects/views/chaos-experiments/chaos-studio'
 import { ExperimentExecutionView } from '@subjects/views/chaos-experiments/experiment-execution'
 import { ResilienceInsightsView } from '@subjects/views/chaos-experiments/resilience-insights'
+import { ResilienceLoadTestsView } from '@subjects/views/chaos-experiments/resilience-load-tests'
 import { ResilienceOverview } from '@subjects/views/chaos-experiments/resilience-overview'
 import { ResilienceUsageView } from '@subjects/views/chaos-experiments/resilience-usage'
 import DraggableCardsDemo from '@subjects/views/draggable-cards-demo'
@@ -357,6 +358,14 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
         element: (
           <ResilienceTestsViewWrapper activeNav="overview">
             <ResilienceOverview />
+          </ResilienceTestsViewWrapper>
+        )
+      },
+      'resilience-tests/load-tests': {
+        label: 'Load Tests',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="load-tests">
+            <ResilienceLoadTestsView />
           </ResilienceTestsViewWrapper>
         )
       },
