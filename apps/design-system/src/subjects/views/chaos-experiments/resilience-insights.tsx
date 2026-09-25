@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 
 import {
   Button,
+  Card,
   DataTable,
   DropdownMenu,
   IconV2,
@@ -12,6 +14,7 @@ import {
   MoreActionsTooltip,
   SearchInput,
   Spacer,
+  Tabs,
   Text
 } from '@harnessio/ui/components'
 import { SandboxLayout } from '@harnessio/views'
@@ -44,8 +47,159 @@ const services: DiscoveredService[] = [
   { name: 'history-service', discoveryAgent: 'k8s-discovery', infrastructure: 'rt-chaos-infra', passiveRisks: 30, confirmedRisks: 7 }
 ]
 
+const RISK_COLORS = {
+  total: 'var(--cn-text-1)',
+  critical: 'var(--cn-text-danger)',
+  high: 'var(--cn-set-orange-primary-bg)',
+  medium: 'var(--cn-text-warning)',
+  low: 'var(--cn-set-blue-primary-bg)'
+}
+
+interface ServiceAtRisk {
+  name: string
+  namespace: string
+  total: number
+  critical: number
+  high: number
+  medium: number
+  low: number
+}
+
+const servicesAtRisk: ServiceAtRisk[] = [
+  { name: 'cart-service', namespace: 'default', total: 10, critical: 3, high: 2, medium: 3, low: 2 },
+  { name: 'accounts-db', namespace: 'default', total: 7, critical: 2, high: 1, medium: 2, low: 2 },
+  { name: 'payment-service', namespace: 'default', total: 7, critical: 2, high: 1, medium: 2, low: 2 }
+]
+
+const RISK_SUMMARY = [
+  { label: 'Total risks', value: 218 },
+  { label: 'Risks scanned from pipelines', value: 57 },
+  { label: 'Risks scanned from services', value: 57 },
+  { label: 'Risks confirmed from probes', value: 32 }
+]
+
+const RiskCount = ({ value, label, color }: { value: number; label: string; color: string }) => (
+  <div className="flex min-w-0 flex-col">
+    <Text variant="body-single-line-strong" style={{ color }}>
+      {value}
+    </Text>
+    <Text variant="caption-single-line-normal" color="foreground-3" truncate>
+      {label}
+    </Text>
+  </div>
+)
+
+const InsightsRisks = () => {
+  const [tab, setTab] = useState<'summary' | 'risks'>('summary')
+
+  const columns = useMemo<ColumnDef<ServiceAtRisk>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Service',
+        enableSorting: false,
+        size: 220,
+        cell: ({ row }) => (
+          <div className="gap-cn-sm flex items-center">
+            <LogoV2 name="harness" size="sm" />
+            <Text variant="body-single-line-strong" color="foreground-1" truncate>
+              {row.original.name}
+            </Text>
+          </div>
+        )
+      },
+      {
+        accessorKey: 'namespace',
+        header: 'Namespace',
+        enableSorting: false,
+        size: 140,
+        cell: ({ row }) => (
+          <Text variant="body-single-line-normal" color="foreground-2">
+            {row.original.namespace}
+          </Text>
+        )
+      },
+      {
+        id: 'risks',
+        header: 'Risks detected',
+        enableSorting: false,
+        size: 320,
+        cell: ({ row }) => (
+          <div className="flex items-end" style={{ gap: 16 }}>
+            <RiskCount value={row.original.total} label="Total" color={RISK_COLORS.total} />
+            <RiskCount value={row.original.critical} label="Critical" color={RISK_COLORS.critical} />
+            <RiskCount value={row.original.high} label="High" color={RISK_COLORS.high} />
+            <RiskCount value={row.original.medium} label="Medium" color={RISK_COLORS.medium} />
+            <RiskCount value={row.original.low} label="Low" color={RISK_COLORS.low} />
+          </div>
+        )
+      },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        size: 140,
+        cell: () => (
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm">
+              <IconV2 name="eye" />
+              View details
+            </Button>
+          </div>
+        )
+      }
+    ],
+    []
+  )
+
+  return (
+    <>
+      <Spacer size={4} />
+      <Tabs.Root value={tab} onValueChange={value => setTab(value as 'summary' | 'risks')}>
+        <Tabs.List>
+          <Tabs.Trigger value="summary">Summary</Tabs.Trigger>
+          <Tabs.Trigger value="risks">Risks</Tabs.Trigger>
+        </Tabs.List>
+      </Tabs.Root>
+      <Spacer size={4} />
+      {tab === 'summary' ? (
+        <>
+          <div className="grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+            {RISK_SUMMARY.map(item => (
+              <Card.Root key={item.label}>
+                <Card.Content className="flex flex-col" style={{ gap: 8 }}>
+                  <Text variant="caption-single-line-normal" color="foreground-3">
+                    {item.label}
+                  </Text>
+                  <Text variant="heading-section">{item.value}</Text>
+                </Card.Content>
+              </Card.Root>
+            ))}
+          </div>
+          <Spacer size={5} />
+          <Text variant="body-strong">Top services at risk</Text>
+          <Spacer size={4} />
+          <DataTable<ServiceAtRisk> columns={columns} data={servicesAtRisk} size="compact" getRowId={row => row.name} />
+        </>
+      ) : (
+        <Text color="foreground-3">No individual risks yet.</Text>
+      )}
+    </>
+  )
+}
+
+const SECTION_IDS = new Set<InsightsSection>(SECTIONS.map(item => item.id))
+
 export const ResilienceInsightsView: React.FC = () => {
-  const [section, setSection] = useState<InsightsSection>('services')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const sectionParam = searchParams.get('section')
+  const section: InsightsSection = SECTION_IDS.has(sectionParam as InsightsSection)
+    ? (sectionParam as InsightsSection)
+    : 'services'
+  const setSection = (id: InsightsSection) => {
+    if (id === 'services') setSearchParams({}, { replace: true })
+    else setSearchParams({ section: id }, { replace: true })
+  }
   const [searchQuery, setSearchQuery] = useState('')
   const [sorting, setSorting] = useState<SortingState>([])
   const [page, setPage] = useState(1)
@@ -262,6 +416,8 @@ export const ResilienceInsightsView: React.FC = () => {
                   }}
                 />
               </>
+            ) : section === 'risks' ? (
+              <InsightsRisks />
             ) : (
               <>
                 <Spacer size={4} />

@@ -1,4 +1,5 @@
 import { FC, PropsWithChildren } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import { Breadcrumb, HarnessLogo, IconV2, Sidebar, Text, useSidebar } from '@harnessio/ui/components'
 
@@ -123,6 +124,8 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
   const isDrTests = activeNav === 'dr-tests'
   const isSettings = activeNav === 'settings'
   const hasLeaf = Boolean(leaf)
+  const insightsCrumb =
+    new URLSearchParams(useLocation().search).get('section') === 'risks' ? 'Risk Insights' : 'Insights'
 
   return (
     <AppViewWrapper
@@ -178,7 +181,7 @@ const ResilienceTestsViewWrapper: FC<PropsWithChildren<ResilienceTestsViewWrappe
                 <>
                   <Breadcrumb.Separator />
                   <Breadcrumb.Item>
-                    <Breadcrumb.Page>Insights</Breadcrumb.Page>
+                    <Breadcrumb.Page>{insightsCrumb}</Breadcrumb.Page>
                   </Breadcrumb.Item>
                 </>
               )}
