@@ -15,6 +15,7 @@ import ChaosExperimentsView from '@subjects/views/chaos-experiments/chaos-experi
 import { ChaosStudioView } from '@subjects/views/chaos-experiments/chaos-studio'
 import { ExperimentExecutionView } from '@subjects/views/chaos-experiments/experiment-execution'
 import { ResilienceDrTestsView } from '@subjects/views/chaos-experiments/resilience-dr-tests'
+import { ResilienceSettingsView } from '@subjects/views/chaos-experiments/resilience-settings'
 import { ResilienceInsightsView } from '@subjects/views/chaos-experiments/resilience-insights'
 import { ResilienceLoadTestsView } from '@subjects/views/chaos-experiments/resilience-load-tests'
 import { ResilienceOverview } from '@subjects/views/chaos-experiments/resilience-overview'
@@ -359,6 +360,14 @@ export const viewPreviews: Record<string, ViewPreviewGroup> = {
         element: (
           <ResilienceTestsViewWrapper activeNav="overview">
             <ResilienceOverview />
+          </ResilienceTestsViewWrapper>
+        )
+      },
+      'resilience-tests/settings': {
+        label: 'Settings',
+        element: (
+          <ResilienceTestsViewWrapper activeNav="settings">
+            <ResilienceSettingsView />
           </ResilienceTestsViewWrapper>
         )
       },
